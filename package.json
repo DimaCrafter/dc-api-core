@@ -1,0 +1,12 @@
+{
+  "name": "dc-api-core",
+  "version": "0.1.0",
+  "author": "DimaCrafter",
+  "homepage": "https://github.com/DimaCrafter/dc-api-core",
+  "bugs": "https://github.com/DimaCrafter/dc-api-core/issues",
+  "repository": "github.com:DimaCrafter/dc-api-core",
+  "dependencies": {
+    "express": "^4.16.3",
+    "mongoose": "^5.2.13"
+  }
+}
