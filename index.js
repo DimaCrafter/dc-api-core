@@ -11,7 +11,7 @@ const path = require('path');
 
 const DB = require('./DB');
 let MainDB;
-if(config.db) MainDB = new DB(config.db);
+if(config.db) MainDB = new DB(config.db, config.devMode);
 
 function getControllerScope(req, res) {
     return {
