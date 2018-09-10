@@ -1,10 +1,17 @@
 const express = require('express');
 const app = express();
-const config = require('../../config.json');
+var bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+const ROOT = process.cwd();
+const config = require(ROOT + '/config.json');
 const fs = require('fs');
+const path = require('path');
 
 const DB = require('./DB');
-if(config.db) const MainDB = new DB(config.db);
+let MainDB;
+if(config.db) MainDB = new DB(config.db);
 
 function getControllerScope(req, res) {
     return {
@@ -12,13 +19,14 @@ function getControllerScope(req, res) {
             res.status(code);
             res.set('Content-Type', 'application/json');
             res.set('Access-Control-Allow-Origin', '*');
+            res.set('Access-Control-Allow-Headers', '*');
             res.send(JSON.stringify({
                 success: code == 200,
                 code,
                 msg
             }, null, 4));
         },
-        data: req.query,
+        data: req.body,
         db: MainDB
     }
 }
@@ -28,23 +36,24 @@ app.all('*', function (req, res) {
     const controllerScope = getControllerScope(req, res);
     
     const args = req.url.split('?')[0].split('/').slice(1);
+    args[0] = args[0][0].toUpperCase() + args[0].slice(1);
     if (loadedControllers[args[0]]) {
         let controller = loadedControllers[args[0]];
         controller.onLoad();
         controller[args[1]].bind(controllerScope)();
     } else {
-        const controllerPath = `../../controllers/${args[0]}.js`;
+        const controllerPath = path.normalize(`${ROOT}/controllers/${args[0]}.js`);
         fs.access(controllerPath, fs.constants.F_OK, (err) => {
             if(err) {
                 controllerScope.send(`API ${args[0]} controller not found.`, 404);
             } else {
                 let controller = require(controllerPath);
                 controller = new controller();
-                !config.devMode && (loadedControllers[args[0]] = controller);
+                config.devMode ? delete require.cache[controllerPath] : (loadedControllers[args[0]] = controller);
                 controller.onLoad && controller.onLoad();
                 if (controller[args[1]]) {
                     controller[args[1]].apply(controllerScope, args.slice(2));
-                } else if (!args[1] || args[1].trim() == '' && controller['undefined']) {
+                } else if ((!args[1] || args[1].trim() == '') && controller['undefined']) {
                     controller['undefined'].apply(controllerScope, args.slice(2));
                 } else {
                     controllerScope.send(`API ${args[0]}.${args[1]} action not found.`, 404);

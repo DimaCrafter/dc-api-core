@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const {Schema} = mongoose;
+const ROOT = process.cwd();
 
 class DB {
     constructor(conf) {
@@ -17,7 +18,7 @@ class DB {
             get(obj, name) {
                 if(name == '__this') return obj;
                 if(name in obj.conn.models) return obj.conn.models[name];
-                let schema = require(`../../models/${name}.js`);
+                let schema = require(`${ROOT}/models/${name}.js`);
                 return mongoose.model(name, new Schema(schema));
             }
         });
