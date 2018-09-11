@@ -1,5 +1,7 @@
 # Simple API core for your projects
 
+[![NPM](https://nodei.co/npm/dc-api-core.png)](https://npmjs.com/package/dc-api-core)
+
 ## Dependencies
 
 * [Express](https://github.com/expressjs/express)
