@@ -18,7 +18,10 @@ class DB {
             get(obj, name) {
                 if(name == '__this') return obj;
                 if(name in obj.conn.models) {
-                    if(devMode) delete obj.conn.models[name];
+                    if(devMode) {
+                        delete obj.conn.models[name];
+                        delete require.cache[require.resolve(`${ROOT}/models/${name}.js`)];
+                    }
                     else return obj.conn.models[name];
                 }
                 let schema = require(`${ROOT}/models/${name}.js`);

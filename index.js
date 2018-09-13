@@ -55,7 +55,7 @@ app.all('*', function (req, res) {
     args[0] = args[0][0].toUpperCase() + args[0].slice(1);
     if (loadedControllers[args[0]]) {
         let controller = loadedControllers[args[0]];
-        controller.onLoad();
+        controller.onLoad && controller.onLoad();
         controller[args[1]].bind(controllerScope)();
     } else {
         const controllerPath = path.normalize(`${ROOT}/controllers/${args[0]}.js`);
