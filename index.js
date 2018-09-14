@@ -17,8 +17,11 @@ app.use(function() {
     if(!appSession) {
         appSession = session({
             saveUninitialized: true,
-            secret: 'whp',
-            store: new MongoStore({mongooseConnection: MainDB.__this.conn}),
+            secret: config.session.secret,
+            store: new MongoStore({
+                mongooseConnection: MainDB.__this.conn,
+                ttl: (config.session.ttl || 36) * 60 * 60
+            }),
             resave: false
         });
     }
@@ -45,7 +48,8 @@ function getControllerScope(req, res) {
         send(msg, code = 200) {
             res.status(code);
             res.set('Content-Type', 'application/json');
-            res.set('Access-Control-Allow-Origin', '*');
+            res.set('Access-Control-Allow-Origin', req.get('origin'));
+            res.set('Access-Control-Allow-Credentials', 'true');
             res.set('Access-Control-Allow-Headers', '*');
             res.send(JSON.stringify({
                 success: code == 200,
