@@ -7,8 +7,23 @@ const fs = require('fs');
 const path = require('path');
 
 const DB = require('./DB');
-let MainDB;
-if(config.db) MainDB = new DB(config.db, config.devMode);
+if(!config.db) { console.log('Config must have db connection details.'); process.exit(); }
+const MainDB = new DB(config.db, config.devMode, true);
+
+const session = require('express-session');
+const MongoStore = require('connect-mongo')(session);
+let appSession;
+app.use(function() {
+    if(!appSession) {
+        appSession = session({
+            saveUninitialized: true,
+            secret: 'whp',
+            store: new MongoStore({mongooseConnection: MainDB.__this.conn}),
+            resave: false
+        });
+    }
+    appSession.apply(this, arguments);
+});
 
 app.use((req, res, next) => {
     req.body = '';
@@ -39,7 +54,8 @@ function getControllerScope(req, res) {
             }, null, 4));
         },
         db: MainDB,
-        data: req.body
+        data: req.body,
+        session: req.session
     };
 }
 
