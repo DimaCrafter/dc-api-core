@@ -9,6 +9,7 @@ const path = require('path');
 const DB = require('./DB');
 if(!config.db) { console.log('Config must have db connection details.'); process.exit(); }
 const MainDB = new DB(config.db, config.devMode, true);
+fs.existsSync(ROOT + '/startup.js') && require(ROOT + '/startup.js');
 
 const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);

@@ -16,7 +16,8 @@
 📙
  ├── ⚙️ controllers   Request controllers
  ├── 🗃️ models        Models for working with DB
- └── 📃 config.json   Configuration file
+ ├── ️📃 config.json   Configuration file
+ └── ⏱ startup.js    Script, that was started before initializing API
 ```
 
 ---
