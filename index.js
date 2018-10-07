@@ -1,106 +1,102 @@
 const express = require('express');
 const app = express();
+const getUtils = require('./utils');
+app.set('json spaces', 4);
 
 const ROOT = process.cwd();
-const config = require(ROOT + '/config.json');
 const fs = require('fs');
 const path = require('path');
 
+const config = require(ROOT + '/config.json');
+if(!config.db) { console.log('[DB] Config must have connection details'); process.exit(); }
 const DB = require('./DB');
-if(!config.db) { console.log('Config must have db connection details.'); process.exit(); }
-const MainDB = new DB(config.db, config.devMode, true);
-fs.existsSync(ROOT + '/startup.js') && require(ROOT + '/startup.js');
 
-const session = require('express-session');
-const MongoStore = require('connect-mongo')(session);
-let appSession;
-app.use(function() {
-    if(!appSession) {
-        appSession = session({
-            saveUninitialized: true,
-            secret: config.session.secret,
-            store: new MongoStore({
-                mongooseConnection: MainDB.__this.conn,
-                ttl: (config.session.ttl || 36) * 60 * 60
-            }),
-            resave: false
-        });
+(async () => {
+    try {
+        console.log(`[DB] Connecting to ${config.db.name} at ${config.db.host}`, config.db.user ? 'as ' + config.db.user : '');
+        var MainDB = new DB(config.db, config.devMode);
+        await MainDB.conn;
+    } catch(err) {
+        console.log('[DB]', err.name + ':', err.message);
+        process.exit();
+    } finally {
+        console.log('[DB] Connected');
     }
-    appSession.apply(this, arguments);
-});
 
-app.use((req, res, next) => {
-    req.body = '';
-    req.setEncoding('utf8');
-    req.on('data', chunk => req.body += chunk);
-    req.on('end', () => {
-        try {
-            req.body = JSON.parse(req.body);
-        } catch {
-            req.body = {};
-            req.isWrong = true;
-        }
-        next();
-    });
-});
-
-function getControllerScope(req, res) {
-    return {
-        send(msg, code = 200) {
-            res.status(code);
-            res.set('Content-Type', 'application/json');
-            res.set('Access-Control-Allow-Origin', req.get('origin'));
-            res.set('Access-Control-Allow-Credentials', 'true');
-            res.set('Access-Control-Allow-Headers', '*');
-            res.send(JSON.stringify({
-                success: code == 200,
-                code,
-                msg
-            }, null, 4));
-        },
-        db: MainDB,
-        data: req.body,
-        session: req.session
-    };
-}
-
-let loadedControllers = {};
-app.all('*', function (req, res) { 
-    const controllerScope = getControllerScope(req, res);
-    if(req.isWrong) {
-        controllerScope.send('Wrong request', 400);
-        return;
+    // Waiting startup.js
+    if(fs.existsSync(ROOT + '/startup.js')) {
+        console.log('[Core] Running startup script');
+        const startup = require(ROOT + '/startup.js');
+        if(typeof startup == 'function') startup = startup.apply({db: MainDB});
+        if(startup instanceof Promise) await startup;
     }
-    
-    const args = req.url.split('?')[0].split('/').slice(1);
-    args[0] = args[0][0].toUpperCase() + args[0].slice(1);
-    if (loadedControllers[args[0]]) {
-        let controller = loadedControllers[args[0]];
-        controller.onLoad && controller.onLoad();
-        controller[args[1]].bind(controllerScope)();
-    } else {
-        const controllerPath = path.normalize(`${ROOT}/controllers/${args[0]}.js`);
-        fs.access(controllerPath, fs.constants.F_OK, (err) => {
-            if(err) {
-                controllerScope.send(`API ${args[0]} controller not found.`, 404);
-            } else {
-                let controller = require(controllerPath);
-                controller = new controller();
-                config.devMode ? delete require.cache[controllerPath] : (loadedControllers[args[0]] = controller);
-                controller.onLoad && controller.onLoad();
-                if (controller[args[1]]) {
-                    controller[args[1]].apply(controllerScope, args.slice(2));
-                } else if ((!args[1] || args[1].trim() == '') && controller['undefined']) {
-                    controller['undefined'].apply(controllerScope, args.slice(2));
-                } else {
-                    controllerScope.send(`API ${args[0]}.${args[1]} action not found.`, 404);
+
+    // Enabling session support
+    const session = require('express-session');
+    const MongoStore = require('connect-mongo')(session);
+    app.use(session({
+        saveUninitialized: true,
+        secret: config.session.secret,
+        store: new MongoStore({
+            mongooseConnection: MainDB.conn,
+            ttl: (config.session.ttl || 36) * 60 * 60
+        }),
+        resave: false
+    }));
+
+    // Enabling body parser middleware
+    app.use((req, res, next) => {
+        req.body = '';
+        req.setEncoding('utf8');
+        req.on('data', chunk => req.body += chunk);
+        req.on('end', () => {
+            if(req.body.trim() !== '') {
+                try {
+                    req.body = JSON.parse(req.body);
+                } catch {
+                    getUtils(req, res).send('Wrong request', 400);
+                    return;
                 }
             }
+            next();
         });
-    }
-});
+    });
 
-!config.port && (config.port = 8081);
-app.listen(config.port, function () {
-    console.log('API started at port ' + config.port);
-});
+    let loadedControllers = {};
+    app.all('*', (req, res) => {
+        const utils = getUtils(req, res, MainDB);
+        function dispatch(controller, action) {
+            controller.onLoad && controller.onLoad();
+            if (action in controller) controller[action].apply(utils);
+            else utils.send(`API ${controller.constructor.name}.${action} action not found`, 404);
+        }
+
+        let [controller, action] = req.path.split('/').slice(1);
+        // Convert controller's name to PascalCase
+        controller = controller.charAt(0).toUpperCase() + controller.slice(1);
+        if (controller in loadedControllers) {
+            // Dispatching cached controller
+            dispatch(loadedControllers[controller], action);
+        } else {
+            const controllerPath = path.normalize(`${ROOT}/controllers/${controller}.js`);
+            fs.access(controllerPath, fs.constants.F_OK | fs.constants.W_OK, (err) => {
+                if(err && err.code == 'ENOENT') utils.send(`API ${controller} controller not found`, 404);
+                else if(err) utils.send(`Can't access ${controller} controller`, 403);
+                else {
+                    let controller = require(controllerPath);
+                    controller = new controller();
+                    // Clear and don't save controller cache in devMode
+                    config.devMode
+                        ? delete require.cache[controllerPath]
+                        : (loadedControllers[controller.constructor.name] = controller);
+                    dispatch(controller, action);
+                }
+            });
+        }
+    });
+
+    config.port = config.port || 8081;
+    app.listen(config.port, function () {
+        console.log('[Core] Started at port ' + config.port);
+    });
+})();

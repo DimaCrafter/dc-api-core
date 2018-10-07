@@ -4,9 +4,11 @@
 
 ## Dependencies
 
+* [connect-mongo](https://github.com/kcbanner/connect-mongo)
 * [Express](https://github.com/expressjs/express)
-* [MongoDB](https://github.com/mongodb/mongo)
+* [express-session](https://github.com/expressjs/session)
 * [Mongoose](https://github.com/Automattic/mongoose)
+* [mongoose-auto-increment](https://github.com/codetunnel/mongoose-auto-increment)
 
 ---
 

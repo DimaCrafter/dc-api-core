@@ -1,6 +1,6 @@
 {
   "name": "dc-api-core",
-  "version": "0.1.4",
+  "version": "0.1.5-1",
   "author": "DimaCrafter",
   "homepage": "https://github.com/DimaCrafter/dc-api-core",
   "bugs": "https://github.com/DimaCrafter/dc-api-core/issues",
@@ -9,6 +9,7 @@
     "connect-mongo": "^2.0.1",
     "express": "^4.16.3",
     "express-session": "^1.15.6",
-    "mongoose": "^5.2.14"
+    "mongoose": "^5.3.1",
+    "mongoose-auto-increment": "^5.0.1"
   }
 }
