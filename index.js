@@ -1,11 +1,10 @@
 const express = require('express');
 const app = express();
-const getUtils = require('./utils');
 app.set('json spaces', 4);
 
 const ROOT = process.cwd();
 const fs = require('fs');
-const path = require('path');
+const {getHTTPUtils} = require('./utils');
 
 const config = require(ROOT + '/config.json');
 if(!config.db) { console.log('[DB] Config must have connection details'); process.exit(); }
@@ -50,11 +49,11 @@ const DB = require('./DB');
         req.setEncoding('utf8');
         req.on('data', chunk => req.body += chunk);
         req.on('end', () => {
-            if(req.body.trim() !== '') {
+            if(req.body !== '') {
                 try {
                     req.body = JSON.parse(req.body);
                 } catch {
-                    getUtils(req, res).send('Wrong request', 400);
+                    getHTTPUtils(req, res).send('Wrong request', 400);
                     return;
                 }
             }
@@ -62,41 +61,15 @@ const DB = require('./DB');
         });
     });
 
-    let loadedControllers = {};
-    app.all('*', (req, res) => {
-        const utils = getUtils(req, res, MainDB);
-        function dispatch(controller, action) {
-            controller.onLoad && controller.onLoad();
-            if (action in controller) controller[action].apply(utils);
-            else utils.send(`API ${controller.constructor.name}.${action} action not found`, 404);
-        }
-
-        let [controller, action] = req.path.split('/').slice(1);
-        // Convert controller's name to PascalCase
-        controller = controller.charAt(0).toUpperCase() + controller.slice(1);
-        if (controller in loadedControllers) {
-            // Dispatching cached controller
-            dispatch(loadedControllers[controller], action);
-        } else {
-            const controllerPath = path.normalize(`${ROOT}/controllers/${controller}.js`);
-            fs.access(controllerPath, fs.constants.F_OK | fs.constants.W_OK, (err) => {
-                if(err && err.code == 'ENOENT') utils.send(`API ${controller} controller not found`, 404);
-                else if(err) utils.send(`Can't access ${controller} controller`, 403);
-                else {
-                    let controller = require(controllerPath);
-                    controller = new controller();
-                    // Clear and don't save controller cache in devMode
-                    config.devMode
-                        ? delete require.cache[controllerPath]
-                        : (loadedControllers[controller.constructor.name] = controller);
-                    dispatch(controller, action);
-                }
-            });
-        }
-    });
+    // Dispatching requests
+    const dispatch = require('./dispatch');
+    dispatch.db = MainDB;
+    require('express-ws')(app);
+    app.ws('/ws', (ws, req) => dispatch.ws(req, ws));
+    app.all('*', (req, res) => dispatch.http(req, res));
 
     config.port = config.port || 8081;
-    app.listen(config.port, function () {
+    app.listen(config.port, () => {
         console.log('[Core] Started at port ' + config.port);
     });
 })();

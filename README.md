@@ -7,6 +7,7 @@
 * [connect-mongo](https://github.com/kcbanner/connect-mongo)
 * [Express](https://github.com/expressjs/express)
 * [express-session](https://github.com/expressjs/session)
+* [express-ws](https://github.com/HenningM/express-ws)
 * [Mongoose](https://github.com/Automattic/mongoose)
 * [mongoose-auto-increment](https://github.com/codetunnel/mongoose-auto-increment)
 
@@ -48,3 +49,4 @@
 |                  |               |                                                              |
 | `devMode`        | `false`       | If `true` controllers and models refreshing on every request |
 | `port`           | `8081`        | API listing port                                             |
+| `ws_timeout`     | `60`          | WebSocket request waiting timeout in seconds                 |

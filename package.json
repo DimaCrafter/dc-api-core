@@ -1,15 +1,16 @@
 {
   "name": "dc-api-core",
-  "version": "0.1.5-1",
+  "version": "0.1.6",
   "author": "DimaCrafter",
   "homepage": "https://github.com/DimaCrafter/dc-api-core",
   "bugs": "https://github.com/DimaCrafter/dc-api-core/issues",
   "repository": "github.com:DimaCrafter/dc-api-core",
   "dependencies": {
     "connect-mongo": "^2.0.1",
-    "express": "^4.16.3",
+    "express": "^4.16.4",
     "express-session": "^1.15.6",
-    "mongoose": "^5.3.1",
+    "express-ws": "^4.0.0",
+    "mongoose": "^5.3.4",
     "mongoose-auto-increment": "^5.0.1"
   }
 }
