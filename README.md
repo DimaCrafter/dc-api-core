@@ -47,6 +47,10 @@
 | `session.secret` | Required      | Private string for cookie                                    |
 | `session.ttl`    | `36`          | Cookie TTL in hours                                          |
 |                  |               |                                                              |
+| `ssl`            | Optional      | Enables HTTPS mode if filled                                 |
+| `ssl.key`        | Required      | Local path to private key                                    |
+| `ssl.cert`       | Required      | Local path to certificate file                               |
+|                  |               |                                                              |
 | `devMode`        | `false`       | If `true` controllers and models refreshing on every request |
 | `port`           | `8081`        | API listing port                                             |
 | `ws_timeout`     | `60`          | WebSocket request waiting timeout in seconds                 |

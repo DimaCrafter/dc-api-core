@@ -61,15 +61,29 @@ const DB = require('./DB');
         });
     });
 
+    // Creating HTTPS server, if ssl enabled
+    if(config.ssl) {
+        const https = require('https');
+        var server = https.createServer({
+            key: fs.readFileSync(ROOT + '/' + config.ssl.key, 'utf8'),
+            cert: fs.readFileSync(ROOT + '/' + config.ssl.cert, 'utf8')
+        }, app);
+    }
+
     // Dispatching requests
     const dispatch = require('./dispatch');
     dispatch.db = MainDB;
-    require('express-ws')(app);
+    require('express-ws')(app, config.ssl?server:undefined);
     app.ws('/ws', (ws, req) => dispatch.ws(req, ws));
     app.all('*', (req, res) => dispatch.http(req, res));
 
+    // Listening port
     config.port = config.port || 8081;
-    app.listen(config.port, () => {
-        console.log('[Core] Started at port ' + config.port);
-    });
+    const listenArgs = [
+        config.port,
+        () => console.log('[Core] Started' + (config.ssl?' with SSL':'') + ' at port ' + config.port)
+    ];
+
+    if(config.ssl) server.listen(...listenArgs);
+    else app.listen(...listenArgs);
 })();
