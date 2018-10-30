@@ -1,5 +1,5 @@
 const ROOT = process.cwd();
-const config = require(ROOT + '/config.json');
+const config = require('./config');
 
 const {getHTTPUtils, getWSUtils} = require('./utils');
 const path = require('path');

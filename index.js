@@ -6,7 +6,7 @@ const ROOT = process.cwd();
 const fs = require('fs');
 const {getHTTPUtils} = require('./utils');
 
-const config = require(ROOT + '/config.json');
+const config = require('./config');
 if(!config.db) { console.log('[DB] Config must have connection details'); process.exit(); }
 const DB = require('./DB');
 
@@ -65,8 +65,8 @@ const DB = require('./DB');
     if(config.ssl) {
         const https = require('https');
         var server = https.createServer({
-            key: fs.readFileSync(ROOT + '/' + config.ssl.key, 'utf8'),
-            cert: fs.readFileSync(ROOT + '/' + config.ssl.cert, 'utf8')
+            key: fs.readFileSync(config.ssl.key, 'utf8'),
+            cert: fs.readFileSync(config.ssl.cert, 'utf8')
         }, app);
     }
 

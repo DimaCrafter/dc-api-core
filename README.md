@@ -27,10 +27,13 @@
 
 ## Easy installation
 
-1) Install package - `npm i dc-api-core --save`
+1) Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
 2) Change start script in `package.json` to `node node_modules/dc-api-core`
 3) Fill `config.json`
 4) Done!
+
+If you want change `config.json` location or name, you should
+change start script to `node node_modules/dc-api-core --cfg /path/to/config.json`
 
 ---
 
