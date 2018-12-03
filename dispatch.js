@@ -4,29 +4,20 @@ const config = require('./config');
 const {getHTTPUtils, getWSUtils} = require('./utils');
 const path = require('path');
 const fs = require('fs');
-let loadedControllers = {};
 
 async function getController(controller) {
     controller = controller.charAt(0).toUpperCase() + controller.slice(1);
     return new Promise((resolve, reject) => {
-        if (controller in loadedControllers) {
-            resolve(loadedControllers[controller]);
-        } else {
-            const controllerPath = path.normalize(`${ROOT}/controllers/${controller}.js`);
-            fs.access(controllerPath, fs.constants.F_OK | fs.constants.W_OK, (err) => {
-                if(err && err.code == 'ENOENT') reject([`API ${controller} controller not found`, 404]);
-                else if(err) reject([`Can't access ${controller} controller`, 403]);
-                else {
-                    let controller = require(controllerPath);
-                    controller = new controller();
-                    // Clear cache and don't save controller cache in devMode
-                    config.devMode
-                        ? delete require.cache[controllerPath]
-                        : (loadedControllers[controller.constructor.name] = controller);
-                    resolve(controller);
-                }
-            });
-        }
+        const controllerPath = path.normalize(`${ROOT}/controllers/${controller}.js`);
+        fs.access(controllerPath, fs.constants.F_OK | fs.constants.W_OK, (err) => {
+            if(err && err.code == 'ENOENT') reject([`API ${controller} controller not found`, 404]);
+            else if(err) reject([`Can't access ${controller} controller`, 403]);
+            else {
+                let controller = require(controllerPath);
+                controller = new controller();
+                resolve(controller);
+            }
+        });
     });
 }
 

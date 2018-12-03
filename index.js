@@ -13,7 +13,7 @@ const DB = require('./DB');
 (async () => {
     try {
         console.log(`[DB] Connecting to ${config.db.name} at ${config.db.host}`, config.db.user ? 'as ' + config.db.user : '');
-        var MainDB = new DB(config.db, config.devMode);
+        var MainDB = new DB(config.db);
         await MainDB.conn;
     } catch(err) {
         console.log('[DB]', err.name + ':', err.message);
@@ -49,26 +49,16 @@ const DB = require('./DB');
         req.setEncoding('utf8');
         req.on('data', chunk => req.body += chunk);
         req.on('end', () => {
-            if(req.body !== '') {
-                try {
-                    req.body = JSON.parse(req.body);
-                } catch {
-                    getHTTPUtils(req, res).send('Wrong request', 400);
-                    return;
-                }
+            // TODO: type check + file upload support
+            try {
+                req.body = JSON.parse(req.body);
+            } catch {
+                getHTTPUtils(req, res).send('Wrong request', 400);
+                return;
             }
             next();
         });
     });
-
-    // Creating HTTPS server, if ssl enabled
-    if(config.ssl) {
-        const https = require('https');
-        var server = https.createServer({
-            key: fs.readFileSync(config.ssl.key, 'utf8'),
-            cert: fs.readFileSync(config.ssl.cert, 'utf8')
-        }, app);
-    }
 
     // Dispatching requests
     const dispatch = require('./dispatch');
@@ -84,6 +74,13 @@ const DB = require('./DB');
         () => console.log('[Core] Started' + (config.ssl?' with SSL':'') + ' at port ' + config.port)
     ];
 
-    if(config.ssl) server.listen(...listenArgs);
-    else app.listen(...listenArgs);
+    if(config.ssl) {
+        // Creating HTTPS server, if ssl enabled
+        const https = require('https');
+        var server = https.createServer({
+            key: fs.readFileSync(config.ssl.key, 'utf8'),
+            cert: fs.readFileSync(config.ssl.cert, 'utf8')
+        }, app);
+        server.listen(...listenArgs);
+    } else app.listen(...listenArgs);
 })();

@@ -35,25 +35,32 @@
 If you want change `config.json` location or name, you should
 change start script to `node node_modules/dc-api-core --cfg /path/to/config.json`
 
+For best development I recommend you to use [nodemon].
+You can install this by executing `npm i -g nodemon` or `yarn global add nodemon`.
+After this change `node` to `nodemon` in start script in your `package.json`.
+
 ---
 
 ## config.json
 
-| Variable         | Default       | Description                                                  |
-|------------------|---------------|--------------------------------------------------------------|
-| `db.host`        | Required      | Database hostname or IP                                      |
-| `db.name`        | Required      | Database name                                                |
-| `db.port`        | `27017`       | Database port                                                |
-| `db.user`        | Optional      | Database username                                            |
-| `db.pass`        |               | and password                                                 |
-|                  |               |                                                              |
-| `session.secret` | Required      | Private string for cookie                                    |
-| `session.ttl`    | `36`          | Cookie TTL in hours                                          |
-|                  |               |                                                              |
-| `ssl`            | Optional      | Enables HTTPS mode if filled                                 |
-| `ssl.key`        | Required      | Local path to private key                                    |
-| `ssl.cert`       | Required      | Local path to certificate file                               |
-|                  |               |                                                              |
-| `devMode`        | `false`       | If `true` controllers and models refreshing on every request |
-| `port`           | `8081`        | API listing port                                             |
-| `ws_timeout`     | `60`          | WebSocket request waiting timeout in seconds                 |
+| Variable         | Default             | Description                                  |
+|------------------|---------------------|----------------------------------------------|
+| `db.host`        | Required            | Database hostname or IP                      |
+| `db.name`        | Required            | Database name                                |
+| `db.port`        | `27017`             | Database port                                |
+| `db.user`        | Optional            | Database username                            |
+| `db.pass`        |                     | and password                                 |
+|                  |                     |                                              |
+| `session.secret` | Required            | Private string for cookie                    |
+| `session.ttl`    | `36`                | Cookie TTL in hours                          |
+|                  |                     |                                              |
+| `ssl`            | Optional            | Enables HTTPS mode if filled                 |
+| `ssl.key`        | Required            | Local path to private key                    |
+| `ssl.cert`       | Required            | Local path to certificate file               |
+|                  |                     |                                              |
+| `devMode`        | `false`             | DEPRECATED, use [nodemon] instead            |
+| `origin`         | `req.get('origin')` | Accept requests only from this origin        |
+| `port`           | `8081`              | API listing port                             |
+| `ws_timeout`     | `60`                | WebSocket request waiting timeout in seconds |
+
+[nodemon]: https://github.com/remy/nodemon

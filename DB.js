@@ -4,7 +4,7 @@ const {Schema} = mongoose;
 const mongooseAI = require('mongoose-auto-increment');
 
 class DB {
-    constructor(conf, devMode = false) {
+    constructor(conf) {
         !conf.port && (conf.port = 27017);
         const uri = `mongodb://${conf.user?`${conf.user}:${conf.pass}@`:''}${conf.host}:${conf.port}/${conf.name}`;
         this.conn = mongoose.createConnection(uri, {
@@ -16,14 +16,7 @@ class DB {
         return new Proxy(this, {
             get(obj, name) {
                 if(name in obj) return obj[name];
-                if(name in obj.conn.models) {
-                    if(devMode) {
-                        // Removing cached model in devMode
-                        delete obj.conn.models[name];
-                        delete require.cache[require.resolve(`${ROOT}/models/${name}.js`)];
-                    }
-                    else return obj.conn.models[name];
-                }
+                if(name in obj.conn.models) return obj.conn.models[name];
 
                 let schemaRaw = {...require(`${ROOT}/models/${name}.js`)};
                 let schemaData = {
