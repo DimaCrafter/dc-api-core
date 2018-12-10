@@ -4,12 +4,10 @@
 
 ## Dependencies
 
-* [connect-mongo](https://github.com/kcbanner/connect-mongo)
 * [Express](https://github.com/expressjs/express)
 * [express-session](https://github.com/expressjs/session)
 * [express-ws](https://github.com/HenningM/express-ws)
-* [Mongoose](https://github.com/Automattic/mongoose)
-* [mongoose-auto-increment](https://github.com/codetunnel/mongoose-auto-increment)
+* [session-file-store](https://github.com/valery-barysok/session-file-store)
 
 ---
 
@@ -17,10 +15,12 @@
 
 ```txt
 📙
- ├── ⚙️ controllers   Request controllers
- ├── 🗃️ models        Models for working with DB
- ├── ️📃 config.json   Configuration file
- └── ⏱ startup.js    Script, that was started before initializing API
+ ├── ⚙️ controllers      Request controllers
+ ├── 🗃️ models           Models for working with DB
+ │   └── 📁 <driver>     Database driver name (Optional)
+ │       └── 📜 <model>  Model name (js or json)
+ ├── ️📃 config.json      Configuration file
+ └── ⏱ startup.js       Script, that was started before initializing API
 ```
 
 ---
@@ -41,26 +41,44 @@ After this change `node` to `nodemon` in start script in your `package.json`.
 
 ---
 
-## config.json
+## `config.json`
 
-| Variable         | Default             | Description                                  |
-|------------------|---------------------|----------------------------------------------|
-| `db.host`        | Required            | Database hostname or IP                      |
-| `db.name`        | Required            | Database name                                |
-| `db.port`        | `27017`             | Database port                                |
-| `db.user`        | Optional            | Database username                            |
-| `db.pass`        |                     | and password                                 |
-|                  |                     |                                              |
-| `session.secret` | Required            | Private string for cookie                    |
-| `session.ttl`    | `36`                | Cookie TTL in hours                          |
-|                  |                     |                                              |
-| `ssl`            | Optional            | Enables HTTPS mode if filled                 |
-| `ssl.key`        | Required            | Local path to private key                    |
-| `ssl.cert`       | Required            | Local path to certificate file               |
-|                  |                     |                                              |
-| `devMode`        | `false`             | DEPRECATED, use [nodemon] instead            |
-| `origin`         | `req.get('origin')` | Accept requests only from this origin        |
-| `port`           | `8081`              | API listing port                             |
-| `ws_timeout`     | `60`                | WebSocket request waiting timeout in seconds |
+| Field                 | Default             | Description                                  |
+|-----------------------|---------------------|----------------------------------------------|
+| `db`                  | Optional            | Object                                       |
+| `db[driverName]`      |                     | Name of [database driver](#plugins)          |
+| `db[driverName].name` | Required            | Database name                                |
+| `db[driverName].port` | Defined by plugin   | Database port                                |
+| `db[driverName].user` | Optional            | Database username                            |
+| `db[driverName].pass` |                     | and password                                 |
+|                       |                     |                                              |
+| `session.secret`      | Required            | Private string for cookie                    |
+| `session.ttl`         | `36`                | Cookie TTL in hours                          |
+|                       |                     |                                              |
+| `ssl`                 | Optional            | Enables HTTPS mode if filled                 |
+| `ssl.key`             | Required            | Local path to private key                    |
+| `ssl.cert`            | Required            | Local path to certificate file               |
+|                       |                     |                                              |
+| `devMode`             | `false`             | DEPRECATED, use [nodemon] instead            |
+| `origin`              | `req.get('origin')` | Accept requests only from this origin        |
+| `port`                | `8081`              | API listing port                             |
+| `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds |
 
 [nodemon]: https://github.com/remy/nodemon
+
+---
+
+<tag id="plugins" />
+
+## Database driver and plugins
+
+Drivers can be defines by plugins, that named like `dc-api-pluginName`.
+For example, official plugin `dc-api-mysql`.
+
+For first, install plugin package via `npm` or `yarn`.
+Arter this add name of plugin package to `plugins` array in `config.json`.
+
+Database plugins registers their middleware in `this.db` array (controller function scope),
+but other plugins can define this anywhere.
+
+If you want create your own plugin, read [plugin developing documentation](docs/Plugins.md)

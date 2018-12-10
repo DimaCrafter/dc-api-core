@@ -1,56 +1,31 @@
-const ROOT = process.cwd();
-const mongoose = require('mongoose');
-const {Schema} = mongoose;
-const mongooseAI = require('mongoose-auto-increment');
+const config = require('./config');
+const Plugins = require('./plugins');
 
-class DB {
-    constructor(conf) {
-        !conf.port && (conf.port = 27017);
-        const uri = `mongodb://${conf.user?`${conf.user}:${conf.pass}@`:''}${conf.host}:${conf.port}/${conf.name}`;
-        this.conn = mongoose.createConnection(uri, {
-            useCreateIndex: true,
-            useNewUrlParser: true
-        });
-        mongooseAI.initialize(this.conn);
-
-        return new Proxy(this, {
-            get(obj, name) {
-                if(name in obj) return obj[name];
-                if(name in obj.conn.models) return obj.conn.models[name];
-
-                let schemaRaw = {...require(`${ROOT}/models/${name}.js`)};
-                let schemaData = {
-                    virtuals: schemaRaw.virtuals || {}
-                };
-
-                delete schemaRaw.virtuals;
-                // Parsing auto-increment options
-                switch(typeof schemaRaw.increment) {
-                    case 'string':
-                        schemaData.increment = {
-                            model: name,
-                            field: schemaRaw.increment
-                        };
-                        break;
-                    case 'object':
-                        schemaData.increment = {...schemaRaw.increment, ...{model: name}};
-                        break;
+module.exports = new Proxy(Plugins.db_drivers, {
+    get (drivers, driverName) {
+        // Return primitive values
+        if (driverName in {}) return ({})[driverName];
+        if (driverName in drivers) {
+            return cfg => {
+                cfg = driverName + (cfg ? ('.' + cfg) : '');
+                if (cfg in config.db) {
+                    const driver = new drivers[driverName](config.db[cfg]);
+                    return new Proxy(driver, {
+                        get(obj, prop) {
+                            if (typeof prop === 'symbol') return;
+                            if (prop.startsWith('__') && (prop = prop.replace(/^__/, '')) in obj) {
+                                return obj[prop];
+                            } else {
+                                return obj.getModel(prop);
+                            }
+                        }
+                    });
+                } else {
+                    console.log('Database configuration `' + cfg + '` not found');
                 }
-                delete schemaRaw.increment;
-
-                const schema = new Schema(schemaRaw);
-                // Parsing virtuals
-                Object.keys(schemaData.virtuals).forEach(key => {
-                    schema.virtual(key)
-                        .get(schemaData.virtuals[key].get)
-                        .set(schemaData.virtuals[key].set);
-                });
-                // Enabling auto-increment plugin if necessary
-                schemaData.increment && schema.plugin(mongooseAI.plugin, schemaData.increment);
-                return obj.conn.model(name, schema);
-            }
-        });
+            };
+        } else {
+            return () => console.log('Database driver `' + driverName + '` not found');
+        }
     }
-}
-
-module.exports = DB;
+});

@@ -4,40 +4,31 @@ app.set('json spaces', 4);
 
 const ROOT = process.cwd();
 const fs = require('fs');
-const {getHTTPUtils} = require('./utils');
+const { getHTTPUtils } = require('./utils');
 
 const config = require('./config');
-if(!config.db) { console.log('[DB] Config must have connection details'); process.exit(); }
-const DB = require('./DB');
+const Plugins = require('./plugins');
 
 (async () => {
-    try {
-        console.log(`[DB] Connecting to ${config.db.name} at ${config.db.host}`, config.db.user ? 'as ' + config.db.user : '');
-        var MainDB = new DB(config.db);
-        await MainDB.conn;
-    } catch(err) {
-        console.log('[DB]', err.name + ':', err.message);
-        process.exit();
-    } finally {
-        console.log('[DB] Connected');
-    }
+    (config.plugins || []).forEach(plugin => require(plugin)(Plugins.utils));
 
     // Waiting startup.js
     if(fs.existsSync(ROOT + '/startup.js')) {
         console.log('[Core] Running startup script');
-        const startup = require(ROOT + '/startup.js');
-        if(typeof startup == 'function') startup = startup.apply({db: MainDB});
+        let startup = require(ROOT + '/startup.js');
+        if(typeof startup == 'function') startup = startup.apply({});
         if(startup instanceof Promise) await startup;
     }
 
     // Enabling session support
     const session = require('express-session');
-    const MongoStore = require('connect-mongo')(session);
+    // TODO: custom session middleware
+    const FileStore = require('session-file-store')(session);
     app.use(session({
         saveUninitialized: true,
         secret: config.session.secret,
-        store: new MongoStore({
-            mongooseConnection: MainDB.conn,
+        store: new FileStore({
+            path: process.cwd() + '/sessions',
             ttl: (config.session.ttl || 36) * 60 * 60
         }),
         resave: false
@@ -62,7 +53,6 @@ const DB = require('./DB');
 
     // Dispatching requests
     const dispatch = require('./dispatch');
-    dispatch.db = MainDB;
     require('express-ws')(app, config.ssl?server:undefined);
     app.ws('/ws', (ws, req) => dispatch.ws(req, ws));
     app.all('*', (req, res) => dispatch.http(req, res));

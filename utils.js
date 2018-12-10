@@ -1,5 +1,6 @@
 const config = require('./config');
-const base = (utils, db, req) => {
+const db = require('./DB');
+const base = (utils, req) => {
     return Object.assign(utils, {
         db,
         session: req.session,
@@ -8,7 +9,7 @@ const base = (utils, db, req) => {
 };
 
 module.exports = {
-    getHTTPUtils(req, res, db) {
+    getHTTPUtils(req, res) {
         return base({
             send(msg, code = 200) {
                 res.set('Access-Control-Allow-Origin', config.origin || req.get('origin'));
@@ -22,10 +23,10 @@ module.exports = {
                 });
             },
             data: req.body
-        }, db, req);
+        }, req);
     },
 
-    getWSUtils(ws, req, db) {
+    getWSUtils(ws, req) {
         return base({
             send(msg, code = 0) {
                 ws.send(JSON.stringify({
@@ -37,6 +38,6 @@ module.exports = {
             end(...args) { this.send(...args); this.close(); },
             close() { ws.close(); },
             data: {}
-        }, db, req);
+        }, req);
     }
 };

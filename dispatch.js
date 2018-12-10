@@ -25,7 +25,7 @@ async function load(controller, action, utils) {
     try { controller = await getController(controller); }
     catch(err) { throw err; }
 
-    controller.onLoad && controller.onLoad();
+    controller.onLoad && controller.onLoad.apply(utils);
     if (action in controller) return controller[action].apply(utils);
     else throw [`API ${controller.constructor.name}.${action} action not found`, 404];
 }
@@ -38,6 +38,7 @@ const dispatch = {
         try {
             await load(controller, action, utils);
         } catch(err) {
+            console.log(err);
             utils.send(...err);
             return;
         }
