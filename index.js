@@ -40,6 +40,7 @@ const Plugins = require('./plugins');
         req.setEncoding('utf8');
         req.on('data', chunk => req.body += chunk);
         req.on('end', () => {
+        	if (req.body === '') return next();
             // TODO: type check + file upload support
             try {
                 req.body = JSON.parse(req.body);

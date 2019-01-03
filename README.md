@@ -37,7 +37,7 @@ change start script to `node node_modules/dc-api-core --cfg /path/to/config.json
 
 For best development I recommend you to use [nodemon].
 You can install this by executing `npm i -g nodemon` or `yarn global add nodemon`.
-After this change `node` to `nodemon` in start script in your `package.json`.
+After this change `node` to `nodemon --ignore sessions/` in start script in your `package.json`.
 
 ---
 

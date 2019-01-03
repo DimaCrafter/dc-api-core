@@ -4,6 +4,8 @@ const base = (utils, req) => {
     return Object.assign(utils, {
         db,
         session: req.session,
+        query: req.query,
+        sessionID: req.sessionID,
         ROOT: process.cwd()
     });
 };
@@ -11,12 +13,13 @@ const base = (utils, req) => {
 module.exports = {
     getHTTPUtils(req, res) {
         return base({
-            send(msg, code = 200) {
+            send(msg, code = 200, clear = false) {
                 res.set('Access-Control-Allow-Origin', config.origin || req.get('origin'));
                 res.set('Access-Control-Allow-Credentials', 'true');
                 res.set('Access-Control-Allow-Headers', '*');
                 res.status(code);
-                res.json({
+                if (clear) res.send(msg);
+                else res.json({
                     success: code === 200,
                     code,
                     msg
