@@ -10,17 +10,18 @@
 
 ## `core` object
 
-When core loads your plugin, it's starts exported method with 1 parameter (`Object`), than described here.
+When core loads your plugin, it's calls exported method with 1 parameter (`Object`), than described here.
 
-| Field                 | Type       | Description |
-|-----------------------|------------|-------------|
-| `register(type, val)` | `Function` | WIP         |
+Note: `->` means argument of function.
+
+| Field                 | Type       | Description                                        |
+|-----------------------|------------|----------------------------------------------------|
+| `register(type, val)` | `Function` |                                                    |
+| ->  `type`            | `String`   | Type of plugin. See [plugin types](#Plugin-types). |
+| ->  `val`             | `Class`    | Class with structure that reqiured by plugin type. |
 
 ---
 
-## Database plugins
+## Plugin types
 
-Coming soon, but if you want do this now, you can try to understand [dc-api-mysql] and [dc-api-mongo] plugins
-
-[dc-api-mysql]: https://github.com/DimaCrafter/dc-api-mysql
-[dc-api-mongo]: https://github.com/DimaCrafter/dc-api-mongo
+Now available types is [db](DBPlugin.md).
