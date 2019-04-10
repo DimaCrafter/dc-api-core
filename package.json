@@ -1,15 +1,15 @@
 {
   "name": "dc-api-core",
-  "version": "0.1.9-3",
+  "version": "0.2.0-1",
   "author": "DimaCrafter",
   "homepage": "https://github.com/DimaCrafter/dc-api-core",
   "bugs": "https://github.com/DimaCrafter/dc-api-core/issues",
   "repository": "github.com:DimaCrafter/dc-api-core",
   "license": "MIT",
+  "bin": "cli.js",
   "dependencies": {
-    "session-file-store": "^1.2.0",
-    "express": "^4.16.4",
-    "express-session": "^1.15.6",
-    "express-ws": "^4.0.0"
+    "chalk": "^2.4.2",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v15.9.0",
+    "jsonwebtoken": "^8.5.1"
   }
 }

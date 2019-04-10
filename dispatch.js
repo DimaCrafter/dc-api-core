@@ -1,11 +1,9 @@
 const ROOT = process.cwd();
-const config = require('./config');
-
-const {getHTTPUtils, getWSUtils} = require('./utils');
+const utils = require('./utils');
 const path = require('path');
 const fs = require('fs');
 
-async function getController(controller) {
+async function getController (controller) {
     controller = controller.charAt(0).toUpperCase() + controller.slice(1);
     return new Promise((resolve, reject) => {
         const controllerPath = path.normalize(`${ROOT}/controllers/${controller}.js`);
@@ -21,57 +19,71 @@ async function getController(controller) {
     });
 }
 
-async function load(controller, action, utils) {
+async function load (controller, action, ctx, isOptional = false) {
     try { controller = await getController(controller); }
     catch(err) { throw err; }
 
-    if (controller.onLoad && controller.onLoad.apply(utils)) return;
-    if (action in controller) return controller[action].apply(utils);
-    else throw [`API ${controller.constructor.name}.${action} action not found`, 404];
+    if (controller.onLoad && controller.onLoad.apply(ctx)) return;
+    if (action in controller) return controller[action].apply(ctx, ctx._args);
+    else if (!isOptional) throw [`API ${controller.constructor.name}.${action} action not found`, 404];
 }
 
 const dispatch = {
-    async http(req, res) {
+    async http (req, res) {
         // Getting controller and action from path
         let [controller, action] = req.path.split('/').slice(1);
-        const utils = getHTTPUtils(req, res, this.db);
+        let ctx;
+
         try {
-            await load(controller, action, utils);
-        } catch(err) {
-            console.log(err);
-            utils.send(...err);
+            ctx = await utils.getHTTP(req, res);
+            await load(controller, action, ctx);
+        } catch (err) {
+            if (err instanceof Array) { ctx.send(...err); }
+            else { ctx.send(err, 500); }
             return;
         }
     },
 
-    async ws(req, ws) {
-        const utils = getWSUtils(ws, req, this.db);
-        // Waiting first message with dispatch information
-        const timeout = setTimeout(() => {
-            utils.send('connection_timeout', false);
-            utils.close();
-            ws.off('message', onData);
-        }, (config.ws_timeout || 60) * 1000);
+    async ws (ws, req) {
+        let obj = {}, ctx;
+        const controller = 'Socket';
 
-        const onData = async req => {
-            clearTimeout(timeout);
-            try {
-                req = JSON.parse(req);
-            } catch {
-                utils.send('wrong_request', 400);
-                return;
-            }
+        try {
+            ctx = await utils.getWS(ws, req);
+            await load(controller, 'open', ctx, true);
+        } catch (err) {
+            if (err instanceof Array) { ctx.emit('error', ...err); }
+            else { ctx.emit('error', err, 500); }
+            return;
+        }
 
+        obj.message = async msg => {
+            msg = JSON.parse(Buffer.from(msg));
+            if (msg[0] == 'open') return;
+            
             try {
-                utils.data = req.data;
-                await load(req.controller, req.action, utils);
-            } catch(err) {
-                if(err instanceof Array) { utils.end(...err); }
-                else { utils.end(err, 500); }
-                return;
+                await load(controller, msg[0], {
+                    _replyEvent: msg[0],
+                    _args: msg.slice(1),
+                    ...ctx
+                });
+            } catch (err) {
+                if (err instanceof Array) { ctx.emit('error', ...err); }
+                else { ctx.emit('error', err, 500); }
             }
-        };
-        ws.once('message', onData);
+        }
+
+        obj.error = async (code, msg) => {
+            try {
+                await load(controller, 'error', {
+                    _args: [code, msg],
+                    ...ctx
+                });
+            } catch (err) {
+                msg = Buffer.from(msg);
+                log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);
+            }
+        }
     }
 };
 

@@ -4,10 +4,8 @@
 
 ## Dependencies
 
-* [Express](https://github.com/expressjs/express)
-* [express-session](https://github.com/expressjs/session)
-* [express-ws](https://github.com/HenningM/express-ws)
-* [session-file-store](https://github.com/valery-barysok/session-file-store)
+* [chalk](https://github.com/chalk/chalk)
+* [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
 
 ---
 
@@ -19,9 +17,12 @@
  ├── 🗃️ models           Models for working with DB
  │   └── 📁 <driver>     Database driver name (Optional)
  │       └── 📜 <model>  Model name (js or json)
+ ├── 🔑 sessions         Sessions storage
  ├── ️📃 config.json      Configuration file
- └── ⏱ startup.js       Script, that was started before initializing API
+ └── ⏱ startup.js       Script, that was started before strting API server
 ```
+
+Information about [code styling are available here](docs/CodeStyling.md)
 
 ---
 
@@ -60,7 +61,7 @@ After this change `node` to `nodemon --ignore sessions/` in start script in your
 | `ssl.cert`            | Required            | Local path to certificate file               |
 |                       |                     |                                              |
 | `devMode`             | `false`             | DEPRECATED, use [nodemon] instead            |
-| `origin`              | `req.get('origin')` | Accept requests only from this origin        |
+| `origin`              | `Origin` header     | Accept requests only from this origin        |
 | `port`                | `8081`              | API listing port                             |
 | `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds |
 

@@ -1,77 +1,85 @@
-const express = require('express');
-const app = express();
-app.set('json spaces', 4);
+const uWS = require('uWebSockets.js');
+const utils = require('./utils');
+const dispatch = require('./dispatch');
+const config = require('./config');
+const log = require('./log');
+const app = (() => {
+    if (config.ssl) {
+        const opts = {...config.ssl};
+        opts.cert_file_name = opts.cert_file_name || opts.cert;
+        opts.key_file_name = opts.key_file_name || opts.key;
+        return uWS.SSLApp(opts);
+    } else {
+        return uWS.App();
+    }
+})();
 
 const ROOT = process.cwd();
 const fs = require('fs');
-const { getHTTPUtils } = require('./utils');
 
-const config = require('./config');
 const Plugins = require('./plugins');
-
 (async () => {
-    (config.plugins || []).forEach(plugin => require(plugin)(Plugins.utils));
-
     // Waiting startup.js
+    Plugins.init();
     if(fs.existsSync(ROOT + '/startup.js')) {
-        console.log('[Core] Running startup script');
+        log.info('Running startup script')
         let startup = require(ROOT + '/startup.js');
         if(typeof startup == 'function') startup = startup.apply({});
         if(startup instanceof Promise) await startup;
     }
 
-    // Enabling session support
-    const session = require('express-session');
-    // TODO: custom session middleware
-    const FileStore = require('session-file-store')(session);
-    app.use(session({
-        saveUninitialized: true,
-        secret: config.session.secret,
-        store: new FileStore({
-            path: process.cwd() + '/sessions',
-            ttl: (config.session.ttl || 36) * 60 * 60
-        }),
-        resave: false
-    }));
+    // Dispatching requests
+    app.any('/*', (res, req) => {
+        res.onAborted(() => res.aborted = true);
+        req.path = req.getUrl();
 
-    // Enabling body parser middleware
-    app.use((req, res, next) => {
-        req.body = '';
-        req.setEncoding('utf8');
-        req.on('data', chunk => req.body += chunk);
-        req.on('end', () => {
-        	if (req.body === '') return next();
-            // TODO: type check + file upload support
-            try {
-                req.body = JSON.parse(req.body);
-            } catch {
-                getHTTPUtils(req, res).send('Wrong request', 400);
-                return;
-            }
-            next();
+        req.headers = {};
+        req.forEach((k, v) => req.headers[k] = v);
+
+        let body = Buffer.from('');
+        const onData = new Promise((resolve, reject) => {
+            res.onData((chunk, isLast) => {
+                body = Buffer.concat([body, Buffer.from(chunk)]);
+                if (isLast) {
+                    if (body.length === 0) return resolve();
+                    switch (req.headers['content-type']) {
+                        case 'application/json':
+                            try { req.body = JSON.parse(body); }
+                            catch (err) { reject(['Wrong JSON data', 400]); }
+                            break;
+                        default:
+                            reject(['Content-Type not supported', 400]);
+                            break;
+                    }
+                    resolve();
+                }
+            });
         });
+
+        onData.then(
+            () => dispatch.http(req, res),
+            err => utils.getHTTP(req, res).send(...err)
+        );
     });
 
-    // Dispatching requests
-    const dispatch = require('./dispatch');
-    require('express-ws')(app, config.ssl?server:undefined);
-    app.ws('/ws', (ws, req) => dispatch.ws(req, ws));
-    app.all('*', (req, res) => dispatch.http(req, res));
+    // Hadling web sockets
+    app.ws('/socket', {
+        maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
+        async open (ws, req) {
+            ws.dispatch = await dispatch.ws(ws, req);
+        },
+        message (ws, msg, isBinary) { ws.dispatch.message(msg); },
+        drain: (ws) => {
+            // ? What means `drain` event?
+            // log.error('WebSocket backpressure: ' + ws.getBufferedAmount());
+        },
+        close: (ws, code, msg) => { ws.dispatch.error(code, msg); }
+    });
 
     // Listening port
-    config.port = config.port || 8081;
-    const listenArgs = [
-        config.port,
-        () => console.log('[Core] Started' + (config.ssl?' with SSL':'') + ' at port ' + config.port)
-    ];
-
-    if(config.ssl) {
-        // Creating HTTPS server, if ssl enabled
-        const https = require('https');
-        var server = https.createServer({
-            key: fs.readFileSync(config.ssl.key, 'utf8'),
-            cert: fs.readFileSync(config.ssl.cert, 'utf8')
-        }, app);
-        server.listen(...listenArgs);
-    } else app.listen(...listenArgs);
+    app.listen(config.port, socket => {
+        const status = `on port ${config.port} ${config.ssl ? 'with' : 'without'} SSL`;
+        if (socket) log.success('Server started ' + status);
+        else log.error('Can`t start server ' + status);
+    });
 })();

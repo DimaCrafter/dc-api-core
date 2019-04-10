@@ -1,16 +1,23 @@
-const Plugins = {
-    db_drivers: {},
+const config = require('./config');
+const ctx = {};
+ctx.register = (type, val, ...args) => {
+    switch (type) {
+        case 'db':
+            Plugins.types.db[args[0]] = val;
+            break;
+        default:
+            throw `Type ${type} not found`;
+    }
+};
 
-    utils: {
-        register (type, val, ...args) {
-            switch (type) {
-                case 'db':
-                    Plugins.db_drivers[args[0]] = val;
-                    break;
-                default:
-                    throw 'Type ' + type + ' not founded';
-            }
-        }
+const Plugins = {
+    types: {
+        db: {}
+    },
+
+    ctx,
+    init () {
+        (config.plugins || []).forEach(plugin => require(plugin)(ctx));
     }
 };
 

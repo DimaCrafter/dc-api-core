@@ -1,15 +1,19 @@
 const fs = require('fs');
-const path = require('path');
-
+const log = require('./log');
 const cfgArg = process.argv.indexOf('--cfg');
+
 let configPath = process.cwd() + '/config.json';
 if(cfgArg !== -1) {
     configPath = process.argv[cfgArg + 1];
     if(!configPath.startsWith('/')) configPath = process.cwd() + '/' + configPath;
 }
-let config = JSON.parse(fs.readFileSync(configPath));
-if(config.ssl) {
-    if(!config.ssl.cert.startsWith('/')) config.ssl.cert = path.dirname(configPath) + '/' + config.ssl.cert;
-    if(!config.ssl.key.startsWith('/'))  config.ssl.key  = path.dirname(configPath) + '/' + config.ssl.key;
+
+const config = JSON.parse(fs.readFileSync(configPath));
+if ('devMode' in config) log.warn('Config property `devMode` is deprecated, use nodemon instead\nhttps://github.com/remy/nodemon');
+config.port = config.port || 8081;
+config.ignore = config.ignore || [];
+
+if (config.session) {
+    config.session.ttl = config.session.ttl || '3d';
 }
 module.exports = config;

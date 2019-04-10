@@ -1,8 +1,9 @@
 const config = require('./config');
+const log = require('./log');
 const Plugins = require('./plugins');
 
 let connections = {};
-module.exports = new Proxy(Plugins.db_drivers, {
+module.exports = new Proxy(Plugins.types.db, {
     get (drivers, driverName) {
         // Return primitive values
         if (driverName in {}) return ({})[driverName];
@@ -14,10 +15,10 @@ module.exports = new Proxy(Plugins.db_drivers, {
                 if (cfg in config.db) {
                     const driver = new drivers[driverName](config.db[cfg], cfg);
                     driver.on('connected', err => {
-                        if (err) console.log(`[DB] Connection failed (${cfg})\n${err}`);
-                        else console.log(`[DB] Connected (${cfg})`);
+                        if (err) log.error(`Connection to database failed (${cfg})`, err);
+                        else log.success(`Connected to database (${cfg})`);
                     });
-                    driver.on('no-model', name => console.log(`[DB] Model ${cfg}.${name} not found`));
+                    driver.on('no-model', name => log.warn(`Database model ${cfg}.${name} not found`));
 
                     const driverProxy = new Proxy(driver, {
                         get(obj, prop) {
@@ -32,11 +33,11 @@ module.exports = new Proxy(Plugins.db_drivers, {
                     connections[cfg] = { driver, driverProxy };
                     return driverProxy;
                 } else {
-                    console.log(`[DB] Configuration ${cfg} not found`);
+                    log.error(`Database configuration ${cfg} not found`);
                 }
             };
         } else {
-            return () => console.log(`[DB] Driver ${driverName} not found`);
+            return () => log.error(`Database driver ${driverName} not found`);
         }
     }
 });
