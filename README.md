@@ -22,7 +22,9 @@
  └── ⏱ startup.js       Script, that was started before strting API server
 ```
 
-Information about [code styling are available here](docs/CodeStyling.md)
+Information about [code styling are available here](docs/CodeStyling.md).
+
+[API Client you can find here](docs/Client.md)
 
 ---
 

@@ -32,28 +32,29 @@ const dispatch = {
     async http (req, res) {
         // Getting controller and action from path
         let [controller, action] = req.path.split('/').slice(1);
-        let ctx;
+        const ctx = await utils.getHTTP(req, res);
+        if (ctx.err) return ctx.send(ctx.err, 500);
 
         try {
-            ctx = await utils.getHTTP(req, res);
             await load(controller, action, ctx);
         } catch (err) {
             if (err instanceof Array) { ctx.send(...err); }
-            else { ctx.send(err, 500); }
+            else { ctx.send(err.toString(), 500); }
             return;
         }
     },
 
     async ws (ws, req) {
-        let obj = {}, ctx;
+        let obj = {};
         const controller = 'Socket';
+        const ctx = await utils.getWS(ws, req);
+        if (ctx.err) return ctx.emit('error', ctx.err.toString(), 500);
 
         try {
-            ctx = await utils.getWS(ws, req);
             await load(controller, 'open', ctx, true);
         } catch (err) {
             if (err instanceof Array) { ctx.emit('error', ...err); }
-            else { ctx.emit('error', err, 500); }
+            else { ctx.emit('error', err.toString(), 500); }
             return;
         }
 
@@ -69,7 +70,7 @@ const dispatch = {
                 });
             } catch (err) {
                 if (err instanceof Array) { ctx.emit('error', ...err); }
-                else { ctx.emit('error', err, 500); }
+                else { ctx.emit('error', err.toString(), 500); }
             }
         }
 

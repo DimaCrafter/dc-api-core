@@ -29,12 +29,24 @@ const Plugins = require('./plugins');
     }
 
     // Dispatching requests
-    app.any('/*', (res, req) => {
+    app.options('/*', async (res, req) => {
+        res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
+        res.writeHeader('Access-Control-Allow-Headers', 'content-type, token');
+        res.writeHeader('Access-Control-Expose-Headers', 'token');
+        res.writeStatus('200 OK');
+        res.end();
+    });
+
+    app.any('/*', async (res, req) => {
         res.onAborted(() => res.aborted = true);
         req.path = req.getUrl();
 
         req.headers = {};
         req.forEach((k, v) => req.headers[k] = v);
+
+        // CORS (i hate it)
+        res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
+        res.writeHeader('Access-Control-Expose-Headers', 'token');
 
         let body = Buffer.from('');
         const onData = new Promise((resolve, reject) => {
@@ -56,24 +68,28 @@ const Plugins = require('./plugins');
             });
         });
 
-        onData.then(
-            () => dispatch.http(req, res),
-            err => utils.getHTTP(req, res).send(...err)
-        );
+        try {
+            await onData;
+            await dispatch.http(req, res);
+        } catch (err) {
+            (await utils.getHTTP(req, res)).send(...err)
+        }
     });
 
     // Hadling web sockets
     app.ws('/socket', {
         maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
         async open (ws, req) {
+            req.headers = {};
+            req.forEach((k, v) => req.headers[k] = v);
             ws.dispatch = await dispatch.ws(ws, req);
         },
         message (ws, msg, isBinary) { ws.dispatch.message(msg); },
         drain: (ws) => {
             // ? What means `drain` event?
             // log.error('WebSocket backpressure: ' + ws.getBufferedAmount());
-        },
-        close: (ws, code, msg) => { ws.dispatch.error(code, msg); }
+        }
+        // close: (ws, code, msg) => { ws.dispatch.error(code, msg); }
     });
 
     // Listening port

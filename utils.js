@@ -1,6 +1,5 @@
 const log = require('./log');
 const session = require('./session');
-const config = require('./config');
 const getBase = (req) => {
     return {
         get db () { log.warn('`this.db` is deprecated, use require(\'dc-api-core/DB\') instead'); },
@@ -15,9 +14,6 @@ module.exports = {
         ctx.data = req.body;
         ctx.send = (msg, code = 200, isPure = false) => {
             if (res.aborted) return;
-            res.writeHeader('Access-Control-Allow-Origin', config.origin || req.headers.origin);
-            res.writeHeader('Access-Control-Allow-Credentials', 'true');
-            res.writeHeader('Access-Control-Allow-Headers', 'content-type');
             // TODO: make code - status object
             res.writeStatus(code.toString());
             
@@ -33,7 +29,6 @@ module.exports = {
             ctx.session = await session(req, token => res.writeHeader('token', token));
         } catch (err) {
             ctx.err = err;
-            return err;
         }
 
         return ctx;
@@ -41,6 +36,29 @@ module.exports = {
 
     async getWS (ws, req) {
         const ctx = getBase(req);
+
+        // Parsing IP
+        const ipRaw = Buffer.from(ws.getRemoteAddress()).toString('hex');
+        const ipParts = [];
+        for (let i = 0; i < ipRaw.length; i += 4) ipParts.push(ipRaw.slice(i, i + 4));
+
+        if (ipParts[ipParts.length - 3] == 'ffff') {
+            const ipv4 = [];
+            ipv4.push(parseInt(ipParts[ipParts.length - 2].slice(0, 2), 16));
+            ipv4.push(parseInt(ipParts[ipParts.length - 2].slice(2), 16));
+            ipv4.push(parseInt(ipParts[ipParts.length - 1].slice(0, 2), 16));
+            ipv4.push(parseInt(ipParts[ipParts.length - 1].slice(2), 16));
+            ctx.address = {
+                type: 'ipv4',
+                value: ipv4.join('.')
+            };
+        } else {
+            ctx.address = {
+                type: 'ipv6',
+                value: ipParts.join(':')
+            };
+        }
+
         ctx.send = (msg, code = 0) => {
             if (this._replyEvent) this.emit(this._replyEvent, msg, code);
             else log.warn('No event to reply');
@@ -59,7 +77,6 @@ module.exports = {
             ctx.session = await session(req, token => ctx.emit('token', token));
         } catch (err) {
             ctx.err = err;
-            return err;
         }
 
         return ctx;
