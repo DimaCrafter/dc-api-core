@@ -9,7 +9,7 @@ if(cfgArg !== -1) {
 }
 
 const config = JSON.parse(fs.readFileSync(configPath));
-if ('devMode' in config) log.warn('Config property `devMode` is deprecated, use nodemon instead\nhttps://github.com/remy/nodemon');
+if ('devMode' in config) log.warn('Config property `devMode` is deprecated, use CLI instead');
 config.port = config.port || 8081;
 config.ignore = config.ignore || [];
 

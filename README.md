@@ -5,6 +5,7 @@
 ## Dependencies
 
 * [chalk](https://github.com/chalk/chalk)
+* [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
 * [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
 
 ---
@@ -31,16 +32,19 @@ Information about [code styling are available here](docs/CodeStyling.md).
 ## Easy installation
 
 1) Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
-2) Change start script in `package.json` to `node node_modules/dc-api-core`
+2) Change start script in `package.json` to `dc-api-core`
 3) Fill `config.json`
 4) Done!
 
-If you want change `config.json` location or name, you should
-change start script to `node node_modules/dc-api-core --cfg /path/to/config.json`
+## CLI
 
-For best development I recommend you to use [nodemon].
-You can install this by executing `npm i -g nodemon` or `yarn global add nodemon`.
-After this change `node` to `nodemon --ignore sessions/` in start script in your `package.json`.
+You can use `dc-api-core` command locally is `package.json` scripts.
+
+Options:
+
+* No options - Just running your project
+* `--dev` - Running project with nodemon.
+* `--cfg <path>` - Overrides `config.json` location. You can use both relative and absolute paths.
 
 ---
 
@@ -56,18 +60,44 @@ After this change `node` to `nodemon --ignore sessions/` in start script in your
 | `db[driverName].pass` |                     | and password                                 |
 |                       |                     |                                              |
 | `session.secret`      | Required            | Private string for cookie                    |
-| `session.ttl`         | `36`                | Cookie TTL in hours                          |
+| `session.store`       | Required            | Database config name                         |
+| `session.ttl`         | `3d` (3 days)       | Session lifetime in [zeit/ms] format         |
 |                       |                     |                                              |
 | `ssl`                 | Optional            | Enables HTTPS mode if filled                 |
+| `ssl.*`               | Optional            | Any `uWS.SSLApp` options field               |
 | `ssl.key`             | Required            | Local path to private key                    |
 | `ssl.cert`            | Required            | Local path to certificate file               |
 |                       |                     |                                              |
-| `devMode`             | `false`             | DEPRECATED, use [nodemon] instead            |
+| `plugins`             | `[]`                | Array of plugin packages names               |
+| `devMode`             | `false`             | DEPRECATED, use CLI instead                  |
 | `origin`              | `Origin` header     | Accept requests only from this origin        |
 | `port`                | `8081`              | API listing port                             |
 | `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds |
 
-[nodemon]: https://github.com/remy/nodemon
+[zeit/ms]: https://github.com/zeit/ms
+
+Example:
+
+```json
+{
+    "port": 443,
+    "db": {
+        "mongo": {
+            "host": "localhost",
+            "name": "test-db"
+        }
+    },
+    "plugins": ["dc-api-mongo"],
+    "session": {
+        "secret": "super secret string",
+        "store": "mongo"
+    },
+    "ssl": {
+        "cert": "/etc/letsencrypt/live/awesome.site/cert.pem",
+        "key": "/etc/letsencrypt/live/awesome.site/privkey.pem"
+    }
+}
+```
 
 ---
 
@@ -85,3 +115,14 @@ Database plugins registers their middleware in `this.db` array (controller funct
 but other plugins can define this anywhere.
 
 If you want create your own plugin, read [plugin developing documentation](docs/Plugins.md)
+
+---
+
+## My TODOs
+
+* [ ] Support for serving SPA
+* [ ] WebSocket fallback (like socket.io)
+* [ ] Redirect from HTTP to HTTPS (80 -> 443)
+* [ ] Normal documentation (GitHub wiki or mode `.md` files in `/docs`)
+* [ ] Routing rules & middlewares
+* [ ] Local/remote (git) plugins and middlewares support

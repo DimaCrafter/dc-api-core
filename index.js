@@ -5,7 +5,7 @@ const config = require('./config');
 const log = require('./log');
 const app = (() => {
     if (config.ssl) {
-        const opts = {...config.ssl};
+        const opts = { ...config.ssl };
         opts.cert_file_name = opts.cert_file_name || opts.cert;
         opts.key_file_name = opts.key_file_name || opts.key;
         return uWS.SSLApp(opts);
@@ -21,11 +21,11 @@ const Plugins = require('./plugins');
 (async () => {
     // Waiting startup.js
     Plugins.init();
-    if(fs.existsSync(ROOT + '/startup.js')) {
+    if (fs.existsSync(ROOT + '/startup.js')) {
         log.info('Running startup script')
         let startup = require(ROOT + '/startup.js');
-        if(typeof startup == 'function') startup = startup.apply({});
-        if(startup instanceof Promise) await startup;
+        if (typeof startup == 'function') startup = startup.apply({});
+        if (startup instanceof Promise) await startup;
     }
 
     // Dispatching requests
@@ -85,11 +85,11 @@ const Plugins = require('./plugins');
             ws.dispatch = await dispatch.ws(ws, req);
         },
         message (ws, msg, isBinary) { ws.dispatch.message(msg); },
-        drain: (ws) => {
+        drain (ws) {
             // ? What means `drain` event?
             // log.error('WebSocket backpressure: ' + ws.getBufferedAmount());
-        }
-        // close: (ws, code, msg) => { ws.dispatch.error(code, msg); }
+        },
+        close (ws, code, msg) { ws.dispatch.error(code, msg); }
     });
 
     // Listening port

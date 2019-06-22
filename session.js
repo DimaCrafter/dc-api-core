@@ -31,7 +31,9 @@ module.exports = (req, onToken) => {
         function create () {
             db.Session.create({}, (err, session) => {
                 if (err) return reject('Can`t create session');
-                jwt.sign({ _id: session._id }, config.session.secret, (err, token) => {
+                jwt.sign({ _id: session._id }, config.session.secret, {
+                    expiresIn: config.session.ttl
+                }, (err, token) => {
                     if (err) return reject('Can`t sign session');
                     onToken(token);
                     resolve(proxify(session));

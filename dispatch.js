@@ -1,5 +1,6 @@
 const ROOT = process.cwd();
 const utils = require('./utils');
+const log = require('./log');
 const path = require('path');
 const fs = require('fs');
 
@@ -85,6 +86,8 @@ const dispatch = {
                 log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);
             }
         }
+
+        return obj;
     }
 };
 

@@ -2,7 +2,7 @@
 
 ## Requirements
 
-1. Package should be named as `dc-api-pluginName`.
+1. Package should be named as `dc-api-plugin-name`.
 2. `index.js` or other main script file must export method.
 3. It'll be great, if you write at least simple documentation.
 

@@ -12,17 +12,17 @@ let settings = {
 
 function sendAPI (controller, action, data = {}) {
     return new Promise(resolve => {
-		const url = `${settings.secure ? 'https': 'http'}://${settings.base}/${controller}/${action}`;
-		const headers = {};
-		headers['content-type'] = 'application/json';
-		const token = localStorage.getItem('token');
-		if (token) headers.token = token;
+        const url = `${settings.secure ? 'https': 'http'}://${settings.base}/${controller}/${action}`;
+        const headers = {};
+        headers['content-type'] = 'application/json';
+        const token = localStorage.getItem('token');
+        if (token) headers.token = token;
 
         axios.post(url, JSON.stringify(data), { headers }).then(
             res => {
-				if (res.headers.token) localStorage.setItem('token', res.headers.token);
-				resolve(res.data);
-			},
+                if (res.headers.token) localStorage.setItem('token', res.headers.token);
+                resolve(res.data);
+            },
             err => err.response ? resolve(err.response.data) : resolve({ success: false, code: 0, msg: err.message })
         );
     });
@@ -62,6 +62,5 @@ const API = new Proxy({ settings }, {
     }
 });
 
-window.API = API;
 export default API
 ```
