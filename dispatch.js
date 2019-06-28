@@ -48,27 +48,37 @@ const dispatch = {
     async ws (ws, req) {
         let obj = {};
         const controller = 'Socket';
-        const ctx = await utils.getWS(ws, req);
-        if (ctx.err) return ctx.emit('error', ctx.err.toString(), 500);
+        let ctx;
 
-        try {
-            await load(controller, 'open', ctx, true);
-        } catch (err) {
-            if (err instanceof Array) { ctx.emit('error', ...err); }
-            else { ctx.emit('error', err.toString(), 500); }
-            return;
-        }
+        let initProgress;
+        const init = async token => {
+            ctx = await utils.getWS(ws, req, token);
+            if (ctx.err) return ctx.emit('error', ctx.err.toString(), 500);
+    
+            try {
+                await load(controller, 'open', ctx, true);
+            } catch (err) {
+                if (err instanceof Array) { ctx.emit('error', ...err); }
+                else { ctx.emit('error', err.toString(), 500); }
+                return;
+            }
+        };
 
         obj.message = async msg => {
-            msg = JSON.parse(Buffer.from(msg));
-            if (msg[0] == 'open') return;
-            
+            const buf = Buffer.from(msg);
+            const str = buf.toString();
+            if (str.startsWith('token:')) {
+                initProgress = init(str.slice(6));
+                return;
+            }
+
+            if (initProgress) await initProgress;
             try {
-                await load(controller, msg[0], {
-                    _replyEvent: msg[0],
-                    _args: msg.slice(1),
-                    ...ctx
-                });
+                const parsed = JSON.parse(str);
+                if (parsed[0] == 'open') return;
+                ctx._replyEvent = parsed[0];
+                ctx._args = parsed.slice(1);
+                await load(controller, parsed[0], ctx);
             } catch (err) {
                 if (err instanceof Array) { ctx.emit('error', ...err); }
                 else { ctx.emit('error', err.toString(), 500); }

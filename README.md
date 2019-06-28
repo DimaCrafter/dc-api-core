@@ -121,6 +121,7 @@ If you want create your own plugin, read [plugin developing documentation](docs/
 ## My TODOs
 
 * [ ] Support for serving SPA
+* [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
 * [ ] Redirect from HTTP to HTTPS (80 -> 443)
 * [ ] Normal documentation (GitHub wiki or mode `.md` files in `/docs`)

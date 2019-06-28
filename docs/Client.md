@@ -38,13 +38,18 @@ const API = new Proxy({ settings }, {
         if (controller in obj) return obj[controller];
         if (controller == 'socket') {
             if (!socket) {
-                socket = new WebSocket(`${settings.secure ? 'wss': 'ws'}://${settings.base}/socket`);
-                socket.onopen = () => socketEmitter.__emit('open');
+                socket = new WebSocket(`${settings.secure ? 'wss' : 'ws'}://${settings.base}/socket`);
+                socket.onopen = () => {
+                    socket.send('token:' + localStorage.getItem('token'));
+                    socketEmitter.__emit('open');
+                };
+
                 socket.onmessage = e => {
                     const args = JSON.parse(e.data);
-                    if (args.event == 'token') localStorage.setItem('token', args.msg);
+                    if (args.event === 'token') localStorage.setItem('token', args.msg);
                     socketEmitter.__emit(args.event, args);
                 };
+
                 socket.onerror = err => socketEmitter.__emit('error', err);
                 socket.onclose = e => {
                     socketEmitter.__emit('close', e);

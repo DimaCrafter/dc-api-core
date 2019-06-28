@@ -38,6 +38,7 @@ const Plugins = require('./plugins');
     });
 
     app.any('/*', async (res, req) => {
+        res.aborted = false;
         res.onAborted(() => res.aborted = true);
         req.path = req.getUrl();
 
@@ -54,15 +55,24 @@ const Plugins = require('./plugins');
                 body = Buffer.concat([body, Buffer.from(chunk)]);
                 if (isLast) {
                     if (body.length === 0) return resolve();
-                    switch (req.headers['content-type']) {
-                        case 'application/json':
-                            try { req.body = JSON.parse(body); }
-                            catch (err) { reject(['Wrong JSON data', 400]); }
-                            break;
-                        default:
-                            reject(['Content-Type not supported', 400]);
-                            break;
+                    let type = req.headers['content-type'];
+                    if (type === 'application/json') {
+                        try { req.body = JSON.parse(body); }
+                        catch (err) { reject(['Wrong JSON data', 400]); }
+                    } else if (type === 'application/x-www-form-urlencoded') {
+                        req.body = {};
+                        body.toString().split('&').forEach(line => {
+                            line = line.split('=');
+                            req.body[line[0]] = decodeURIComponent(line[1]);
+                        });
+                    } /*else if (type.startsWith('multipart/form-data')) {
+                        let boundary = type.split('boundary=')[1];
+                        console.log(body.toString(), boundary);
+                        reject(['Content-Type not supported', 400]);
+                    }*/ else {
+                        reject(['Content-Type not supported', 400]);
                     }
+
                     resolve();
                 }
             });
@@ -72,24 +82,33 @@ const Plugins = require('./plugins');
             await onData;
             await dispatch.http(req, res);
         } catch (err) {
-            (await utils.getHTTP(req, res)).send(...err)
+            (await utils.getHTTP(req, res)).send(...err);
         }
     });
 
-    // Hadling web sockets
+    // Handling web sockets
     app.ws('/socket', {
         maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
         async open (ws, req) {
+            ws.isClosed = false;
             req.headers = {};
             req.forEach((k, v) => req.headers[k] = v);
-            ws.dispatch = await dispatch.ws(ws, req);
+            try {
+                ws.dispatch = await dispatch.ws(ws, req);
+            } catch (err) {
+                log.error('+ws', err);
+            }
+            
         },
         message (ws, msg, isBinary) { ws.dispatch.message(msg); },
         drain (ws) {
             // ? What means `drain` event?
             // log.error('WebSocket backpressure: ' + ws.getBufferedAmount());
         },
-        close (ws, code, msg) { ws.dispatch.error(code, msg); }
+        close (ws, code, msg) {
+            ws.isClosed = true;
+            ws.dispatch.error(code, msg);
+        }
     });
 
     // Listening port

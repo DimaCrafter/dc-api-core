@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('./config');
 
-module.exports = (req, onToken) => {
+module.exports = (token, onToken) => {
     let db;
     if (config.session) {
         let cfg = config.session.store.split('.');
@@ -14,9 +14,7 @@ module.exports = (req, onToken) => {
         return new Proxy(doc, {
             get (obj, prop) {
                 if (prop == 'destroy') {
-                    return cb => {
-                        db.Session.remove({ _id: obj._id }, cb);
-                    };
+                    return cb => db.Session.remove({ _id: obj._id }, cb);
                 } else if (prop in obj) {
                     return obj[prop];
                 } else {
@@ -41,8 +39,8 @@ module.exports = (req, onToken) => {
             });
         }
 
-        if (req.headers.token) {
-            jwt.verify(req.headers.token, config.session.secret, (err, data) => {
+        if (token) {
+            jwt.verify(token, config.session.secret, (err, data) => {
                 if (err) return reject('Incorrect session token: ' + err);
                 db.Session.findOne({ _id: data._id }, (err, session) => {
                     if (err) return reject('Can`t get session');
