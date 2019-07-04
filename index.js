@@ -41,6 +41,16 @@ const Plugins = require('./plugins');
         res.aborted = false;
         res.onAborted(() => res.aborted = true);
         req.path = req.getUrl();
+        
+        req.query = req.getQuery();
+        let query = {};
+        req.query.split('&').forEach(p => {
+            let [key, val] = p.split('=');
+            if (val === undefined) val = true;
+            else val = decodeURIComponent(val);
+            query[key] = val;
+        });
+        req.query = query;
 
         req.headers = {};
         req.forEach((k, v) => req.headers[k] = v);

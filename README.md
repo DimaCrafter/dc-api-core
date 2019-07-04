@@ -120,6 +120,7 @@ If you want create your own plugin, read [plugin developing documentation](docs/
 
 ## My TODOs
 
+* [ ] Normal controller context
 * [ ] Support for serving SPA
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)

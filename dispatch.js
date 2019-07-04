@@ -25,7 +25,7 @@ async function load (controller, action, ctx, isOptional = false) {
     catch(err) { throw err; }
 
     if (controller.onLoad && controller.onLoad.apply(ctx)) return;
-    if (action in controller) return controller[action].apply(ctx, ctx._args);
+    if (action in controller) return controller[action].apply({...ctx, controller}, ctx._args);
     else if (!isOptional) throw [`API ${controller.constructor.name}.${action} action not found`, 404];
 }
 
