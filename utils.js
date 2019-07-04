@@ -28,6 +28,11 @@ const getBase = (req, res) => {
         get db () { log.warn('`this.db` is deprecated, use require(\'dc-api-core/DB\') instead'); },
         query: req.query,
         ROOT: process.cwd(),
+        redirect (url) {
+            res.writeStatus('302 Found');
+            res.writeHeader('Location', url);
+            res.end();
+        },
         address
     };
 };
@@ -41,6 +46,7 @@ module.exports = {
             res.aborted = true;
             // TODO: make code - status object
             res.writeStatus(code.toString());
+            for (const header in res.headers) res.writeHeader(header, res.headers[header]);
             
             if (isPure) res.end(msg);
             else res.end(JSON.stringify({
@@ -50,10 +56,12 @@ module.exports = {
             }));
         };
 
-        try {
-            ctx.session = await session(req.headers.token, token => res.writeHeader('token', token));
-        } catch (err) {
-            ctx.err = err;
+        if (!session.disabled) {
+            try {
+                ctx.session = await session(req.headers.token, token => res.headers.token = token);
+            } catch (err) {
+                ctx.err = err;
+            }
         }
 
         return ctx;

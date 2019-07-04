@@ -51,3 +51,5 @@ module.exports = (token, onToken) => {
         } else create();
     });
 }
+
+if (!config.session) module.exports.disabled = true;

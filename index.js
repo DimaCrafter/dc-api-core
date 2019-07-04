@@ -55,9 +55,10 @@ const Plugins = require('./plugins');
         req.headers = {};
         req.forEach((k, v) => req.headers[k] = v);
 
+        res.headers = {};
         // CORS (i hate it)
-        res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
-        res.writeHeader('Access-Control-Expose-Headers', 'token');
+        res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
+        res.headers['Access-Control-Expose-Headers'] = 'token';
 
         let body = Buffer.from('');
         const onData = new Promise((resolve, reject) => {
