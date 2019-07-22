@@ -41,7 +41,7 @@ module.exports = (token, onToken) => {
 
         if (token) {
             jwt.verify(token, config.session.secret, (err, data) => {
-                if (err) return reject('Incorrect session token: ' + err);
+                if (err) return create();
                 db.Session.findOne({ _id: data._id }, (err, session) => {
                     if (err) return reject('Can`t get session');
                     if (!session) create();

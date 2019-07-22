@@ -24,8 +24,9 @@ async function load (controller, action, ctx, isOptional = false) {
     try { controller = await getController(controller); }
     catch(err) { throw err; }
 
+    ctx.controller = controller;
     if (controller.onLoad && controller.onLoad.apply(ctx)) return;
-    if (action in controller) return controller[action].apply({...ctx, controller}, ctx._args);
+    if (action in controller) return controller[action].apply(ctx, ctx._args);
     else if (!isOptional) throw [`API ${controller.constructor.name}.${action} action not found`, 404];
 }
 
@@ -87,10 +88,8 @@ const dispatch = {
 
         obj.error = async (code, msg) => {
             try {
-                await load(controller, 'error', {
-                    _args: [code, msg],
-                    ...ctx
-                });
+                ctx._args = [code, msg];
+                await load(controller, 'error', ctx);
             } catch (err) {
                 msg = Buffer.from(msg);
                 log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);

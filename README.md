@@ -125,6 +125,6 @@ If you want create your own plugin, read [plugin developing documentation](docs/
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
 * [ ] Redirect from HTTP to HTTPS (80 -> 443)
-* [ ] Normal documentation (GitHub wiki or mode `.md` files in `/docs`)
+* [ ] Normal documentation (GitHub wiki or more `.md` files in `/docs`)
 * [ ] Routing rules & middlewares
 * [ ] Local/remote (git) plugins and middlewares support
