@@ -33,6 +33,8 @@ module.exports = (token, onToken) => {
                     expiresIn: config.session.ttl
                 }, (err, token) => {
                     if (err) return reject('Can`t sign session');
+                    session.token = token;
+                    session.save();
                     onToken(token);
                     resolve(proxify(session));
                 });

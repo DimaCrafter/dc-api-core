@@ -53,7 +53,7 @@ Options:
 | Field                 | Default             | Description                                  |
 |-----------------------|---------------------|----------------------------------------------|
 | `db`                  | Optional            | Object                                       |
-| `db[driverName]`      |                     | Name of [database driver](#plugins)          |
+| `db[driverName]`      |                     | Code of [database driver](#DB-module)        |
 | `db[driverName].name` | Required            | Database name                                |
 | `db[driverName].port` | Defined by plugin   | Database port                                |
 | `db[driverName].user` | Optional            | Database username                            |
@@ -70,6 +70,7 @@ Options:
 |                       |                     |                                              |
 | `plugins`             | `[]`                | Array of plugin packages names               |
 | `devMode`             | `false`             | DEPRECATED, use CLI instead                  |
+| `ignore`              | `[]`                | Excluded directories in development mode     |
 | `origin`              | `Origin` header     | Accept requests only from this origin        |
 | `port`                | `8081`              | API listing port                             |
 | `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds |
@@ -101,20 +102,33 @@ Example:
 
 ---
 
-<tag id="plugins" />
+## DB module
 
-## Database driver and plugins
+```ts
+require('dc-api-core/DB'): {
+    [string: code]: (config?: string) => DBDriver
+}
+```
 
-Drivers can be defines by plugins, that named like `dc-api-pluginName`.
-For example, official plugin `dc-api-mysql`.
+* `code` - Registered code of database driver. For example `dc-api-mongo` registers `mongo`.
+* `config` - Configuration name after dot in `config.json`. Ex. `mongo('dev')` points to `db['mongo.dev']`.
+* `DBDriver` - Mongoose-like object (not always, defined by plugin)
+
+## Plugins
 
 For first, install plugin package via `npm` or `yarn`.
-Arter this add name of plugin package to `plugins` array in `config.json`.
+After this add name of plugin package to `plugins` array in `config.json`.
 
-Database plugins registers their middleware in `this.db` array (controller function scope),
-but other plugins can define this anywhere.
+Example `config.json`:
 
-If you want create your own plugin, read [plugin developing documentation](docs/Plugins.md)
+```js
+{
+    // ...
+    plugins: ["dc-api-mongo"]
+}
+```
+
+If you want create your own plugin, read [plugin development documentation](docs/Plugins.md)
 
 ---
 

@@ -5,6 +5,7 @@ if (process.argv.indexOf('--dev') != -1) {
     nodemon({
         ext: 'js json',
         script: __dirname + '/index.js',
+        args: process.argv.slice(2),
         ignore: config.ignore
     });
     

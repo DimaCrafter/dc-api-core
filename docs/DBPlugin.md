@@ -1,8 +1,8 @@
 # Database plugins
 
-Coming soon, but if you want do this now, you can try to understand [dc-api-mysql] and [dc-api-mongo] plugins
+Coming soon, but if you want do this now, you can try to understand [dc-api-mongo] plugin
 
-[dc-api-mysql]: https://github.com/DimaCrafter/dc-api-mysql
+<!-- [dc-api-mysql]: https://github.com/DimaCrafter/dc-api-mysql -->
 [dc-api-mongo]: https://github.com/DimaCrafter/dc-api-mongo
 
 ## Sketch of documentation
@@ -28,9 +28,13 @@ class MyCoolDB extends EventEmitter {
             this.emit('no-model', name);
             return;
         }
+
+        // Mongoose-like model
         return NativeDB.getModelFromSchema(schemaRaw);
     }
 }
 
+// register(pluginType, pluginClass, ...advanced)
+// advanced[0] - code of database driver
 module.exports = core => core.register('db', MyCoolDB, 'mycooldb');
 ```
