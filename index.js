@@ -3,15 +3,16 @@ const utils = require('./utils');
 const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
+const multipart = require('./multipart');
 const app = (() => {
-    if (config.ssl) {
-        const opts = { ...config.ssl };
-        opts.cert_file_name = opts.cert_file_name || opts.cert;
-        opts.key_file_name = opts.key_file_name || opts.key;
-        return uWS.SSLApp(opts);
-    } else {
-        return uWS.App();
-    }
+	if (config.ssl) {
+		const opts = { ...config.ssl };
+		opts.cert_file_name = opts.cert_file_name || opts.cert;
+		opts.key_file_name = opts.key_file_name || opts.key;
+		return uWS.SSLApp(opts);
+	} else {
+		return uWS.App();
+	}
 })();
 
 const ROOT = process.cwd();
@@ -19,113 +20,119 @@ const fs = require('fs');
 
 const Plugins = require('./plugins');
 (async () => {
-    // Waiting startup.js
-    Plugins.init();
-    if (fs.existsSync(ROOT + '/startup.js')) {
-        log.info('Running startup script')
-        let startup = require(ROOT + '/startup.js');
-        if (typeof startup == 'function') startup = startup.apply({});
-        if (startup instanceof Promise) await startup;
-    }
+	// Waiting startup.js
+	Plugins.init();
+	if (fs.existsSync(ROOT + '/startup.js')) {
+		log.info('Running startup script')
+		let startup = require(ROOT + '/startup.js');
+		if (typeof startup == 'function') startup = startup.apply({});
+		if (startup instanceof Promise) await startup;
+	}
 
-    // Dispatching requests
-    app.options('/*', async (res, req) => {
-        res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
-        res.writeHeader('Access-Control-Allow-Headers', 'content-type, token');
-        res.writeHeader('Access-Control-Expose-Headers', 'token');
-        res.writeStatus('200 OK');
-        res.end();
-    });
+	// Dispatching requests
+	app.options('/*', async (res, req) => {
+		res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
+		res.writeHeader('Access-Control-Allow-Headers', 'content-type, token');
+		res.writeHeader('Access-Control-Expose-Headers', 'token');
+		res.writeStatus('200 OK');
+		res.end();
+	});
 
-    app.any('/*', async (res, req) => {
-        res.aborted = false;
-        res.onAborted(() => res.aborted = true);
-        req.path = req.getUrl();
-        
-        req.query = req.getQuery();
-        let query = {};
-        req.query.split('&').forEach(p => {
-            let [key, val] = p.split('=');
-            if (val === undefined) val = true;
-            else val = decodeURIComponent(val);
-            query[key] = val;
-        });
-        req.query = query;
+	app.any('/*', async (res, req) => {
+		res.aborted = false;
+		res.onAborted(() => res.aborted = true);
+		req.path = req.getUrl();
 
-        req.headers = {};
-        req.forEach((k, v) => req.headers[k] = v);
+		req.query = req.getQuery();
+		let query = {};
+		req.query.split('&').forEach(p => {
+			let [key, val] = p.split('=');
+			if (val === undefined) val = true;
+			else val = decodeURIComponent(val);
+			query[key] = val;
+		});
+		req.query = query;
 
-        res.headers = {};
-        // CORS (i hate it)
-        res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
-        res.headers['Access-Control-Expose-Headers'] = 'token';
+		req.headers = {};
+		req.forEach((k, v) => req.headers[k] = v);
 
-        let body = Buffer.from('');
-        const onData = new Promise((resolve, reject) => {
-            res.onData((chunk, isLast) => {
-                body = Buffer.concat([body, Buffer.from(chunk)]);
-                if (isLast) {
-                    if (body.length === 0) return resolve();
-                    let type = req.headers['content-type'];
-                    if (type === 'application/json') {
-                        try { req.body = JSON.parse(body); }
-                        catch (err) { reject(['Wrong JSON data', 400]); }
-                    } else if (type === 'application/x-www-form-urlencoded') {
-                        req.body = {};
-                        body.toString().split('&').forEach(line => {
-                            line = line.split('=');
-                            req.body[line[0]] = decodeURIComponent(line[1]);
-                        });
-                    } /*else if (type.startsWith('multipart/form-data')) {
-                        let boundary = type.split('boundary=')[1];
-                        console.log(body.toString(), boundary);
-                        reject(['Content-Type not supported', 400]);
-                    }*/ else {
-                        reject(['Content-Type not supported', 400]);
-                    }
+		res.headers = {};
+		// CORS (i hate this)
+		res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
+		res.headers['Access-Control-Expose-Headers'] = 'token';
 
-                    resolve();
-                }
-            });
-        });
+		let body = Buffer.from('');
+		const onData = new Promise((resolve, reject) => {
+			res.onData((chunk, isLast) => {
+				body = Buffer.concat([body, Buffer.from(chunk)]);
+				if (isLast) {
+					if (body.length === 0) return resolve();
+					let type = req.headers['content-type'];
+					if (type === 'application/json') {
+						try { req.body = JSON.parse(body); }
+						catch (err) { reject(['Wrong JSON data', 400]); }
+					} else if (type === 'application/x-www-form-urlencoded') {
+						req.body = {};
+						body.toString().split('&').forEach(line => {
+							line = line.split('=');
+							req.body[line[0]] = decodeURIComponent(line[1]);
+						});
+					} else if (type.startsWith('multipart/form-data')) {
+						req.body = multipart(type, body);
+						if (req.body.json) {
+							try {
+								Object.assign(req.body, JSON.parse(req.body.json.content.toString()));
+								delete req.body.json;
+							} catch (err) {
+								reject(['Wrong JSON data', 400]);
+							}
+						}
+					} else {
+						reject(['Content-Type not supported', 400]);
+					}
 
-        try {
-            await onData;
-            await dispatch.http(req, res);
-        } catch (err) {
-            (await utils.getHTTP(req, res)).send(...err);
-        }
-    });
+					resolve();
+				}
+			});
+		});
 
-    // Handling web sockets
-    app.ws('/socket', {
-        maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
-        async open (ws, req) {
-            ws.isClosed = false;
-            req.headers = {};
-            req.forEach((k, v) => req.headers[k] = v);
-            try {
-                ws.dispatch = await dispatch.ws(ws, req);
-            } catch (err) {
-                log.error('+ws', err);
-            }
-            
-        },
-        message (ws, msg, isBinary) { ws.dispatch.message(msg); },
-        drain (ws) {
-            // ? What means `drain` event?
-            // log.error('WebSocket backpressure: ' + ws.getBufferedAmount());
-        },
-        close (ws, code, msg) {
-            ws.isClosed = true;
-            ws.dispatch.error(code, msg);
-        }
-    });
+		try {
+			await onData;
+			await dispatch.http(req, res);
+		} catch (err) {
+			(await utils.getHTTP(req, res)).send(...err);
+		}
+	});
 
-    // Listening port
-    app.listen(config.port, socket => {
-        const status = `on port ${config.port} ${config.ssl ? 'with' : 'without'} SSL`;
-        if (socket) log.success('Server started ' + status);
-        else log.error('Can`t start server ' + status);
-    });
+	// Handling web sockets
+	app.ws('/socket', {
+		maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
+		async open (ws, req) {
+			ws.isClosed = false;
+			req.headers = {};
+			req.forEach((k, v) => req.headers[k] = v);
+			try {
+				ws.dispatch = await dispatch.ws(ws, req);
+			} catch (err) {
+				log.error('+ws', err);
+			}
+
+		},
+		message (ws, msg, isBinary) { ws.dispatch.message(msg); },
+		drain (ws) {
+			// ? What means `drain` event?
+			// log.error('WebSocket backpressure: ' + ws.getBufferedAmount());
+		},
+		close (ws, code, msg) {
+			ws.isClosed = true;
+			ws.dispatch.error(code, msg);
+		}
+	});
+
+	// Listening port
+	app.listen(config.port, socket => {
+		const status = `on port ${config.port} ${config.ssl ? 'with' : 'without'} SSL`;
+		if (socket) log.success('Server started ' + status);
+		else log.error('Can`t start server ' + status);
+	});
 })();

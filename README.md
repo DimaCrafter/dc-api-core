@@ -25,7 +25,7 @@
 
 Information about [code styling are available here](docs/CodeStyling.md).
 
-[API Client you can find here](docs/Client.md)
+[API Client you can find here](https://github.com/DimaCrafter/dc-api-client)
 
 ---
 

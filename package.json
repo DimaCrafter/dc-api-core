@@ -1,6 +1,7 @@
 {
   "name": "dc-api-core",
-  "version": "0.2.1-4",
+  "version": "0.2.2",
+  "description": "Simple API core for your projects",
   "author": "DimaCrafter",
   "homepage": "https://github.com/DimaCrafter/dc-api-core",
   "bugs": "https://github.com/DimaCrafter/dc-api-core/issues",
@@ -10,7 +11,6 @@
   "dependencies": {
     "chalk": "^2.4.2",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v15.11.0",
-    "jsonwebtoken": "^8.5.1",
-    "parse-multipart": "^1.0.4"
+    "jsonwebtoken": "^8.5.1"
   }
 }
