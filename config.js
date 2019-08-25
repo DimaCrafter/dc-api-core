@@ -11,9 +11,22 @@ if(cfgArg !== -1) {
 const config = JSON.parse(fs.readFileSync(configPath));
 if ('devMode' in config) log.warn('Config property `devMode` is deprecated, use CLI instead');
 config.port = config.port || 8081;
-config.ignore = config.ignore || [];
+config.isDev = process.argv.indexOf('--dev') !== -1;
 
-if (config.session) {
-    config.session.ttl = config.session.ttl || '3d';
+if (config.dev && config.isDev) {
+    (function merge (target, source) {
+        Object.keys(source).forEach(key => {
+            if (typeof source[key] === 'object') {
+                if (!target[key]) target[key] = {};
+                merge(target[key], source[key]);
+            } else {
+                target[key] = source[key];
+            }
+        });
+    })(config, config.dev);
+    delete config.dev;
 }
+
+config.ignore = config.ignore || [];
+if (config.session) config.session.ttl = config.session.ttl || '3d';
 module.exports = config;

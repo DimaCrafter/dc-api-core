@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const config = require('./config');
-if (process.argv.indexOf('--dev') != -1) {
+if (config.isDev) {
     const nodemon = require('nodemon');
     nodemon({
         ext: 'js json',

@@ -6,7 +6,7 @@
 
 * [chalk](https://github.com/chalk/chalk)
 * [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
-* [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
+* [μWebSockets.js](https://github.com/uNetworking/μWebSockets.js)
 
 ---
 
@@ -43,7 +43,7 @@ You can use `dc-api-core` command locally is `package.json` scripts.
 Options:
 
 * No options - Just running your project
-* `--dev` - Running project with nodemon.
+* `--dev` - Running project in development mode with nodemon.
 * `--cfg <path>` - Overrides `config.json` location. You can use both relative and absolute paths.
 
 ---
@@ -64,16 +64,19 @@ Options:
 | `session.ttl`         | `3d` (3 days)       | Session lifetime in [zeit/ms] format         |
 |                       |                     |                                              |
 | `ssl`                 | Optional            | Enables HTTPS mode if filled                 |
-| `ssl.*`               | Optional            | Any `uWS.SSLApp` options field               |
+| `ssl.*`               | Optional            | Any `μWS.SSLApp` options field               |
 | `ssl.key`             | Required            | Local path to private key                    |
 | `ssl.cert`            | Required            | Local path to certificate file               |
 |                       |                     |                                              |
 | `plugins`             | `[]`                | Array of plugin packages names               |
-| `devMode`             | `false`             | DEPRECATED, use CLI instead                  |
-| `ignore`              | `[]`                | Excluded directories in development mode     |
 | `origin`              | `Origin` header     | Accept requests only from this origin        |
 | `port`                | `8081`              | API listing port                             |
 | `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds |
+|                       |                     |                                              |
+| `devMode`             | Deprecated          | Start with `--dev` argument for development  |
+| `ignore`              | `[]`                | Excluded directories in development mode     |
+| `isDev`               | Read-only           | `true` if using `--dev` argument             |
+| `dev`                 | `{}`                | Config to merge if `isDev` is `true`         |
 
 [zeit/ms]: https://github.com/zeit/ms
 
