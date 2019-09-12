@@ -1,9 +1,12 @@
 const uWS = require('uWebSockets.js');
+const fs = require('fs');
+
 const utils = require('./utils');
 const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
 const multipart = require('./multipart');
+
 const app = (() => {
 	if (config.ssl) {
 		const opts = { ...config.ssl };
@@ -16,15 +19,15 @@ const app = (() => {
 })();
 
 const ROOT = process.cwd();
-const fs = require('fs');
 
 const Plugins = require('./plugins');
+
 (async () => {
 	// Waiting startup.js
 	Plugins.init();
-	if (fs.existsSync(ROOT + '/startup.js')) {
+	if (fs.existsSync(`${ROOT}/startup.js`)) {
 		log.info('Running startup script')
-		let startup = require(ROOT + '/startup.js');
+		let startup = require(`${ROOT}/startup.js`);
 		if (typeof startup == 'function') startup = startup.apply({});
 		if (startup instanceof Promise) await startup;
 	}
@@ -132,7 +135,7 @@ const Plugins = require('./plugins');
 	// Listening port
 	app.listen(config.port, socket => {
 		const status = `on port ${config.port} ${config.ssl ? 'with' : 'without'} SSL`;
-		if (socket) log.success('Server started ' + status);
-		else log.error('Can`t start server ' + status);
+		if (socket) log.success(`Server started ${status}`);
+		else log.error(`Can't start server ${status}`);
 	});
 })();
