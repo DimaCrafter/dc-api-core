@@ -18,7 +18,6 @@
  ├── 🗃️ models           Models for working with DB
  │   └── 📁 <driver>     Database driver name (Optional)
  │       └── 📜 <model>  Model name (js or json)
- ├── 🔑 sessions         Sessions storage
  ├── ️📃 config.json      Configuration file
  └── ⏱ startup.js       Script, that was started before strting API server
 ```
@@ -137,7 +136,6 @@ If you want create your own plugin, read [plugin development documentation](docs
 
 ## My TODOs
 
-* [ ] Normal controller context
 * [ ] Support for serving SPA
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)

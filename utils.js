@@ -24,7 +24,8 @@ const getBase = (req, res) => {
         };
     }
 
-    return {
+    let controllerProxy;
+    const ctx = {
         get db () { log.warn('`this.db` is deprecated, use require(\'dc-api-core/DB\') instead'); },
         query: req.query,
         ROOT: process.cwd(),
@@ -33,27 +34,45 @@ const getBase = (req, res) => {
             res.writeHeader('Location', url);
             res.end();
         },
-        address
+        address,
+
+        set controller (controller) {
+            controllerProxy = new Proxy(controller, {
+                get (obj, prop) {
+                    if (typeof obj[prop] === 'function') return obj[prop].bind(ctx);
+                    return obj[prop];
+                }
+            });
+        },
+        get controller () { return controllerProxy; }
     };
+
+    return ctx;
 };
 
 module.exports = {
     async getHTTP (req, res) {
         const ctx = getBase(req, res);
         ctx.data = req.body;
-        ctx.send = (msg, code = 200, isPure = false) => {
+        ctx.send = (data, code = 200, isPure = false) => {
             if (res.aborted) return;
             res.aborted = true;
             // TODO: make code - status object
             res.writeStatus(code.toString());
             for (const header in res.headers) res.writeHeader(header, res.headers[header]);
             
-            if (isPure) res.end(msg);
-            else res.end(JSON.stringify({
-                success: code === 200,
-                code,
-                msg
-            }));
+            if (isPure) {
+                if (typeof data === 'string') res.writeHeader('Content-Type', 'text/plain');
+                else if (data instanceof Buffer)  res.writeHeader('Content-Type', 'application/octet-stream');
+                res.end(data);
+            } else {
+                res.writeHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({
+                    success: code === 200,
+                    code,
+                    msg: data
+                }));
+            }
         };
 
         if (!session.disabled) {
