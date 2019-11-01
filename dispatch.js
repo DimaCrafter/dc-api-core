@@ -4,18 +4,21 @@ const log = require('./log');
 const path = require('path');
 const fs = require('fs');
 
-async function getController (controller) {
-    controller = controller.charAt(0).toUpperCase() + controller.slice(1);
+async function getController (name) {
+    name = name.charAt(0).toUpperCase() + name.slice(1);
     return new Promise((resolve, reject) => {
-        const controllerPath = path.normalize(`${ROOT}/controllers/${controller}.js`);
-        fs.access(controllerPath, fs.constants.F_OK | fs.constants.W_OK, (err) => {
-            if(err && err.code == 'ENOENT') reject([`API ${controller} controller not found`, 404]);
-            else if(err) reject([`Can't access ${controller} controller`, 403]);
-            else {
-                let controller = require(controllerPath);
-                controller = new controller();
-                resolve(controller);
+        const controllerPath = path.normalize(`${ROOT}/controllers/${name}.js`);
+        fs.access(controllerPath, fs.constants.F_OK | fs.constants.W_OK, err => {
+            if (err) {
+                if (err.code == 'ENOENT') reject([`API ${name} controller not found`, 404]);
+                else reject([`Can't access ${name} controller`, 403]);
+                return;
             }
+            
+            let controller = require(controllerPath);
+            if (typeof controller != 'function') return reject([`Exported value from ${name} controller isn't a class`, 501]);
+            controller = new controller();
+            resolve(controller);
         });
     });
 }
