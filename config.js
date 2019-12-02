@@ -1,11 +1,10 @@
-const fs = require('fs');
 const log = require('./log');
 const cfgArg = process.argv.indexOf('--cfg');
 
 let configPath = process.cwd() + '/config';
-if(cfgArg !== -1) {
+if (cfgArg !== -1) {
     configPath = process.argv[cfgArg + 1];
-    if(!configPath.startsWith('/')) configPath = process.cwd() + '/' + configPath;
+    if (!configPath.startsWith('/')) configPath = process.cwd() + '/' + configPath;
 }
 
 delete require.cache[configPath];
@@ -14,11 +13,11 @@ if ('devMode' in config) log.warn('Config property `devMode` is deprecated, use 
 config.port = config.port || 8081;
 config.isDev = process.argv.indexOf('--dev') !== -1;
 
-if (config.dev && config.isDev) {
+if (config.isDev && config.dev) {
     (function merge (target, source) {
         Object.keys(source).forEach(key => {
             if (typeof source[key] === 'object') {
-                if (!target[key]) target[key] = {};
+                if (!target[key]) target[key] = source[key] instanceof Array ? [] : {};
                 merge(target[key], source[key]);
             } else {
                 target[key] = source[key];
@@ -26,8 +25,8 @@ if (config.dev && config.isDev) {
         });
     })(config, config.dev);
     delete config.dev;
+    config.ignore = config.ignore || [];
 }
 
-config.ignore = config.ignore || [];
 if (config.session) config.session.ttl = config.session.ttl || '3d';
 module.exports = config;
