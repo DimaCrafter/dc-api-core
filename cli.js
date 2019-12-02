@@ -9,9 +9,9 @@ if (config.isDev) {
         ignore: config.ignore
     });
     
-    console.log('API was restarted after changing any .js or .json files');
-    console.log('You can submit `rs` to restart manually');
-    nodemon.on('start', () => console.log('\nStarting API...'));
+    console.log('API will be restarted after saving any .js or .json files');
+    console.log('You can submit `rs` to restart server manually');
+    nodemon.on('start', () => console.log('\nStarting API server...'));
 } else {
     require('.');
 }

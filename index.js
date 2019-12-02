@@ -20,8 +20,8 @@ const fs = require('fs');
 
 const Plugins = require('./plugins');
 (async () => {
-	// Waiting startup.js
 	Plugins.init();
+	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
 		log.info('Running startup script')
 		let startup = require(ROOT + '/startup.js');
@@ -29,15 +29,17 @@ const Plugins = require('./plugins');
 		if (startup instanceof Promise) await startup;
 	}
 
-	// Dispatching requests
-	app.options('/*', async (res, req) => {
-		res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
+	// CORS preflight request
+	app.options('/*', (res, req) => {
+		res.writeHeader('Access-Control-Allow-Methods', 'GET, POST');
 		res.writeHeader('Access-Control-Allow-Headers', 'content-type, token');
-		res.writeHeader('Access-Control-Expose-Headers', 'token');
+		res.writeHeader('Access-Control-Max-Age', '86400');
+		res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
 		res.writeStatus('200 OK');
 		res.end();
 	});
 
+	// Dispatching requests
 	app.any('/*', async (res, req) => {
 		res.aborted = false;
 		res.onAborted(() => res.aborted = true);
@@ -57,10 +59,9 @@ const Plugins = require('./plugins');
 		req.forEach((k, v) => req.headers[k] = v);
 
 		res.headers = {};
-		// CORS (i hate this)
 		res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
 		res.headers['Access-Control-Expose-Headers'] = 'token';
-
+		
 		let body = Buffer.from('');
 		const onData = new Promise((resolve, reject) => {
 			res.onData((chunk, isLast) => {
