@@ -1,3 +1,10 @@
+/* // TODO: add this
+function ObjectIdFromTime (timestamp) {
+    if (typeof timestamp == 'string') timestamp = new Date(timestamp).getTime();
+    var hexSeconds = Math.floor(timestamp / 1000).toString(16);
+    return hexSeconds + '0000000000000000';
+}
+*/
 const config = require('./config');
 const log = require('./log');
 const Plugins = require('./plugins');
@@ -8,12 +15,17 @@ module.exports = new Proxy(Plugins.types.db, {
         // Return primitive values
         if (driverName in {}) return ({})[driverName];
         if (driverName in drivers) {
-            return cfg => {
-                cfg = driverName + (cfg ? ('.' + cfg) : '');
+            return (cfg, options) => {
+                if (options) {
+                    if (!options.identifier) return log.warn('Templated connection to database must have `identifier` field');
+                    cfg = options.identifier;
+                } else {
+                    cfg = driverName + (cfg ? ('.' + cfg) : '');
+                }
                 // Reusing connections
                 if (cfg in connections) return connections[cfg].driverProxy;
-                if (cfg in config.db) {
-                    const driver = new drivers[driverName](config.db[cfg], cfg);
+                if (options || cfg in config.db) {
+                    const driver = new drivers[driverName](options || config.db[cfg], cfg);
                     driver.on('connected', err => {
                         if (err) log.error(`Connection to database failed (${cfg})`, err);
                         else log.success(`Connected to database (${cfg})`);
