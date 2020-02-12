@@ -30,7 +30,9 @@ Information about [code styling are available here](docs/CodeStyling.md).
 
 ## Installation
 **0)** Run `npm init`
+
 **1)** Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
+
 **2)** Add the following to `package.json`.
 
 e.g.
