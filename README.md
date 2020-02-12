@@ -29,9 +29,9 @@ Information about [code styling are available here](docs/CodeStyling.md).
 ---
 
 ## Installation
-0) Run `npm init`
-1) Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
-2) Add the following to `package.json`.
+**0)** Run `npm init`
+**1)** Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
+**2)** Add the following to `package.json`.
 
 e.g.
 ```javascript
@@ -42,7 +42,7 @@ scripts:{
 }
 
 ```
-3) Fill `config.json`
+**3)** Fill `config.json`
 
 e.g.
 ```json
@@ -53,11 +53,11 @@ e.g.
     }
 }
 ```
-4) Run `npm run dc-init`
+**4)** Run `npm run dc-init`
 
-5) Run `npm start`
+**5)** Run `npm start`
 
-6) Done!
+**6)** Done!
 
 ## CLI
 
