@@ -28,7 +28,7 @@ Information about [code styling are available here](docs/CodeStyling.md).
 
 ---
 
-## Easy installation
+## Installation
 
 1) Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
 2) Change start script in `package.json` to `dc-api-core`
@@ -37,7 +37,7 @@ Information about [code styling are available here](docs/CodeStyling.md).
 
 ## CLI
 
-You can use `dc-api-core` command locally is `package.json` scripts.
+You can use `dc-api-core`. Command is located in `package.json` scripts.
 
 Options:
 
