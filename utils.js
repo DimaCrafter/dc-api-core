@@ -5,8 +5,8 @@ function getIP (req, res) {
     // Parsing
     let ipRaw = Buffer.from(res.getRemoteAddress()).toString('hex');
 
-    // Using X-Real-IP in docker container (172.18.XXX.XXX -> AC12XXXX)
-    if (ipRaw.slice(24, 28) == 'ac12' && req.headers['x-real-ip']) {
+    // Using X-Real-IP in docker container (172.18.XXX.XXX -> AC12XXXX) or on localhost
+    if ((ipRaw.slice(24, 28) == 'ac12' || ipRaw == '00000000000000000000000000000001' || ipRaw == '00000000000000000000ffff7f000001') && req.headers['x-real-ip']) {
         ipRaw = req.headers['x-real-ip'];
         return {
             type: ~ipRaw.indexOf('.') ? 'ipv4' : 'ipv6',
@@ -75,15 +75,11 @@ module.exports = {
             
             if (isPure) {
                 if (typeof data === 'string') res.writeHeader('Content-Type', 'text/plain');
-                else if (data instanceof Buffer)  res.writeHeader('Content-Type', 'application/octet-stream');
+                else if (data instanceof Buffer) res.writeHeader('Content-Type', 'application/octet-stream');
                 res.end(data);
             } else {
                 res.writeHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({
-                    success: code === 200,
-                    code,
-                    msg: data
-                }));
+                res.end(JSON.stringify(data));
             }
         };
 
