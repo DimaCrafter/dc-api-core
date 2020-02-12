@@ -28,12 +28,36 @@ Information about [code styling are available here](docs/CodeStyling.md).
 
 ---
 
-## Easy installation
-
+## Installation
+0) Run `npm init`
 1) Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
-2) Change start script in `package.json` to `dc-api-core`
+2) Add the following to `package.json`.
+
+e.g.
+```javascript
+scripts:{
+  "start": "dc-api-core",
+  "dev": "dc-api-core --dev",
+  "dc-init": "mkdir -p controllers && touch ./controllers/index.js"
+}
+
+```
 3) Fill `config.json`
-4) Done!
+
+e.g.
+```json
+{
+    "port": 80,
+    "dev": {
+        "port": 8081
+    }
+}
+```
+4) Run `npm run dc-init`
+
+5) Run `npm start`
+
+6) Done!
 
 ## CLI
 
