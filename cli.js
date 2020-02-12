@@ -1,17 +1,55 @@
 #!/usr/bin/env node
 const config = require('./config');
 if (config.isDev) {
-    const nodemon = require('nodemon');
-    nodemon({
-        ext: 'js json',
-        script: __dirname + '/index.js',
-        args: process.argv.slice(2),
-        ignore: config.ignore
+    const ROOT = process.cwd();
+    const log = require('./log');
+
+    let core;
+    let restarting = false;
+    const { spawn } = require('child_process');
+    const start = () => {
+        if (restarting) return;
+
+        restarting = true;
+        if (core) core.kill();
+        log.text('');
+        log.info('Starting API...');
+        core = spawn('node', [__dirname + '/index.js', ...process.argv.slice(2)], { cwd: ROOT });
+        core.stderr.pipe(process.stderr);
+        core.stdout.pipe(process.stdout);
+        core.stdout.once('readable', () => restarting = false);
+        core.on('exit', (code) => {
+            if (code) log.error('API server process crushed with code ' + code);
+            else if (!restarting) log.info('API server process exited');
+        });
+    };
+
+    log.text('API will be restarted after saving any file');
+    log.text('You can submit `rs` to restart server manually');
+    start();
+    process.stdin.on('data', line => {
+        if (line.toString().trim() == 'rs') start();
     });
-    
-    console.log('API will be restarted after saving any .js or .json files');
-    console.log('You can submit `rs` to restart server manually');
-    nodemon.on('start', () => console.log('\nStarting API server...'));
+
+    const watch = require('watch');
+    watch.watchTree(ROOT, {
+        ignoreDotFiles: true,
+        filter: file => {
+            file = file.slice(file.lastIndexOf('/') + 1);
+            if (~config.ignore.indexOf(file)) return false;
+            return true;
+        },
+        interval: 0.075
+    }, (path, curr, prev) => {
+        if (typeof path == 'object' && !prev && !curr) return;
+        start();
+    });
+
+    process.on('SIGINT', () => {
+        restarting = true;
+        if (core) core.kill();
+        process.exit();
+    });
 } else {
     require('.');
 }

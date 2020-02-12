@@ -4,9 +4,9 @@
 
 ## Dependencies
 
-* [chalk](https://github.com/chalk/chalk)
 * [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
-* [μWebSockets.js](https://github.com/uNetworking/μWebSockets.js)
+* [μWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
+* [watch](https://github.com/mikeal/watch)
 
 ---
 
@@ -42,7 +42,7 @@ You can use `dc-api-core` command locally is `package.json` scripts.
 Options:
 
 * No options - Just running your project
-* `--dev` - Running project in development mode with nodemon.
+* `--dev` - Running project in development mode.
 * `--cfg <path>` - Overrides `config.json` location. You can use both relative and absolute paths.
 
 ---
@@ -98,6 +98,12 @@ Example:
     "ssl": {
         "cert": "/etc/letsencrypt/live/awesome.site/cert.pem",
         "key": "/etc/letsencrypt/live/awesome.site/privkey.pem"
+    },
+    "dev": {
+        "port": 8081,
+        "db": {
+            "mongo": { "name": "test-dev-db" }
+        }
     }
 }
 ```
@@ -108,12 +114,13 @@ Example:
 
 ```ts
 require('dc-api-core/DB'): {
-    [string: code]: (config?: string) => DBDriver
+    [string: code]: (config?: string, template?: Object) => DBDriver
 }
 ```
 
 * `code` - Registered code of database driver. For example `dc-api-mongo` registers `mongo`.
 * `config` - Configuration name after dot in `config.json`. Ex. `mongo('dev')` points to `db['mongo.dev']`.
+* `template` - Object that overrides selected configuration.
 * `DBDriver` - Mongoose-like object (not always, defined by plugin)
 
 ## Plugins
@@ -126,7 +133,7 @@ Example `config.json`:
 ```js
 {
     // ...
-    plugins: ["dc-api-mongo"]
+    "plugins": ["dc-api-mongo"]
 }
 ```
 
@@ -140,6 +147,6 @@ If you want create your own plugin, read [plugin development documentation](docs
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
 * [ ] Redirect from HTTP to HTTPS (80 -> 443)
-* [ ] Normal documentation (GitHub wiki or more `.md` files in `/docs`)
+* (WIP) Normal documentation (GitHub wiki or more `.md` files in `/docs`)
 * [ ] Routing rules & middlewares
-* [ ] Local/remote (git) plugins and middlewares support
+* (WIP) Local/remote (git) plugins and middlewares support

@@ -24,9 +24,10 @@ if (config.isDev && config.dev) {
             }
         });
     })(config, config.dev);
-    delete config.dev;
     config.ignore = config.ignore || [];
+    if (!~config.ignore.indexOf('node_modules')) config.ignore.push('node_modules');
 }
 
+delete config.dev;
 if (config.session) config.session.ttl = config.session.ttl || '3d';
 module.exports = config;
