@@ -15,37 +15,35 @@ module.exports = new Proxy(Plugins.types.db, {
         // Return primitive values
         if (driverName in {}) return ({})[driverName];
         if (driverName in drivers) {
-            return (cfg, options) => {
-                if (options) {
-                    if (!options.identifier) return log.warn('Templated connection to database must have `identifier` field');
-                    cfg = options.identifier;
-                } else {
-                    cfg = driverName + (cfg ? ('.' + cfg) : '');
-                }
+            return (confName, options) => {
+                if (options && !options.identifier && !options.name) return log.warn('Templated connection to database must have `identifier` field');
+                confName = driverName + (confName ? ('.' + confName) : '');
+
                 // Reusing connections
-                if (cfg in connections) return connections[cfg].driverProxy;
-                if (options || cfg in config.db) {
-                    const driver = new drivers[driverName](options || config.db[cfg], cfg);
+                if (confName in connections) return connections[confName].driverProxy;
+                if (confName in config.db) {
+                    let cfg = config.db[confName];
+                    let connName = confName;
+                    if (options) {
+                        connName = driverName + '.' + (options.identifier || options.name);
+                        cfg = { ...cfg, ...options };
+                        delete cfg.identifier;
+                    }
+
+                    const driver = new drivers[driverName](cfg, confName);
                     driver.on('connected', err => {
-                        if (err) log.error(`Connection to database failed (${cfg})`, err);
-                        else log.success(`Connected to database (${cfg})`);
+                        if (err) log.error(`Connection to database failed (${connName})`, err);
+                        else log.success(`Connected to database (${connName})`);
                     });
-                    driver.on('no-model', name => log.warn(`Database model ${cfg}.${name} not found`));
+                    driver.on('no-model', name => log.warn(`Database model ${confName}.${name} not found`));
 
                     const driverProxy = new Proxy(driver, {
-                        get(obj, prop) {
-                            if (typeof prop === 'symbol') return;
-                            if (prop.startsWith('__') && (prop = prop.replace(/^__/, '')) in obj) {
-                                return obj[prop];
-                            } else {
-                                return obj.getModel(prop);
-                            }
-                        }
+                        get: (obj, prop) => (prop in obj) ? obj[prop] : obj.getModel(prop)
                     });
-                    connections[cfg] = { driver, driverProxy };
+                    connections[confName] = { driver, driverProxy };
                     return driverProxy;
                 } else {
-                    log.error(`Database configuration ${cfg} not found`);
+                    log.error(`Database configuration ${confName} not found`);
                 }
             };
         } else {
