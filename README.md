@@ -40,9 +40,8 @@ e.g.
 scripts:{
   "start": "dc-api-core",
   "dev": "dc-api-core --dev",
-  "dc-init": "mkdir -p controllers && touch ./controllers/index.js"
+  "init": "mkdir -p controllers && echo 'module.exports = class Index {}' > ./controllers/Index.js"
 }
-
 ```
 **3)** Fill `config.json`
 
@@ -55,7 +54,7 @@ e.g.
     }
 }
 ```
-**4)** Run `npm run dc-init`
+**4)** Run `npm run init`
 
 **5)** Run `npm start`
 
