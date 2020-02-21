@@ -83,7 +83,7 @@ module.exports = {
             }
         };
 
-        if (!session.disabled) {
+        if (session.enabled) {
             try {
                 ctx.session = await session(req.headers.token, token => res.headers.token = token);
             } catch (err) {

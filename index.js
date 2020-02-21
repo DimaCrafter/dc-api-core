@@ -1,4 +1,5 @@
 const uWS = require('uWebSockets.js');
+require('./plugins').init();
 const utils = require('./utils');
 const dispatch = require('./dispatch');
 const config = require('./config');
@@ -17,10 +18,7 @@ const app = (() => {
 
 const ROOT = process.cwd();
 const fs = require('fs');
-
-const Plugins = require('./plugins');
 (async () => {
-	Plugins.init();
 	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
 		log.info('Running startup script')
