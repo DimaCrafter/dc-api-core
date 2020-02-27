@@ -37,7 +37,7 @@ Information about [code styling are available here](docs/CodeStyling.md).
 
 e.g.
 ```javascript
-scripts:{
+"scripts": {
   "start": "dc-api-core",
   "dev": "dc-api-core --dev",
   "init": "mkdir -p controllers && echo 'module.exports = class Index {}' > ./controllers/Index.js"
