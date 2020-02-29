@@ -91,7 +91,7 @@ Options:
 | `db[driverName].port` | Defined by plugin   | Database port                                |
 | `db[driverName].user` | Optional            | Database username                            |
 | `db[driverName].pass` |                     | and password                                 |
-| `db[driverName].srv`  | Optional            | Boolean, `true` - use `srv`                  |
+| `db[driverName].srv`  | Optional for mongo  | Boolean, `true` - use `srv`                  |
 |                       |                     |                                              |
 | `session.secret`      | Required            | Private string for cookie                    |
 | `session.store`       | Required            | Database config name                         |
