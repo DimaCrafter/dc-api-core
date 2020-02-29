@@ -35,12 +35,21 @@ Information about [code styling are available here](docs/CodeStyling.md).
 
 **2)** Add the following to `package.json`.
 
-e.g.
+for Linux end MacOS users
 ```javascript
-scripts:{
+"scripts": {
   "start": "dc-api-core",
   "dev": "dc-api-core --dev",
   "init": "mkdir -p controllers && echo 'module.exports = class Index {}' > ./controllers/Index.js"
+}
+```
+
+for Windows users
+```javascript
+"scripts": {
+  "start": "dc-api-core",
+  "dev": "dc-api-core --dev",
+  "init": "mkdir controllers && echo module.exports = class Index {} > ./controllers/Index.js"
 }
 ```
 **3)** Fill `config.json`
