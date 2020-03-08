@@ -18,19 +18,19 @@ module.exports = new Proxy(Plugins.types.db, {
             return (confName, options) => {
                 if (options && !options.identifier && !options.name) return log.warn('Templated connection to database must have `identifier` field');
                 confName = driverName + (confName ? ('.' + confName) : '');
+                let connName = options ? (driverName + '.' + (options.identifier || options.name)) : confName;
 
                 // Reusing connections
-                if (confName in connections) return connections[confName].driverProxy;
+                if (connName in connections) return connections[connName].driverProxy;
                 if (confName in config.db) {
                     let cfg = config.db[confName];
-                    let connName = confName;
                     if (options) {
-                        connName = driverName + '.' + (options.identifier || options.name);
                         cfg = { ...cfg, ...options };
                         delete cfg.identifier;
                     }
 
                     const driver = new drivers[driverName](cfg, confName);
+                    driver.cfg = cfg;
                     driver.on('connected', err => {
                         if (err) log.error(`Connection to database failed (${connName})`, err);
                         else log.success(`Connected to database (${connName})`);
@@ -40,7 +40,7 @@ module.exports = new Proxy(Plugins.types.db, {
                     const driverProxy = new Proxy(driver, {
                         get: (obj, prop) => (prop in obj) ? obj[prop] : obj.getModel(prop)
                     });
-                    connections[confName] = { driver, driverProxy };
+                    connections[connName] = { driver, driverProxy };
                     return driverProxy;
                 } else {
                     log.error(`Database configuration ${confName} not found`);
