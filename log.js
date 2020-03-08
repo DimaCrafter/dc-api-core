@@ -4,12 +4,14 @@ const reset = '\x1B[0m';
 const bold = '\x1B[1m';
 let colors;
 const ansi = (color, isBG = false) => `\x1B[${color + (isBG ? BG : COLOR)}m`;
-if (process.env.COLORTERM == 'truecolor' || process.env.COLORTERM == 'x24') {
-    const rgb = (color, isBG = false) => `\x1B[${8 + (isBG ? BG : COLOR)};2;${color[0]};${color[1]};${color[2]}m`;
-    colors = [rgb([0, 192, 255], true), rgb([0, 192, 64], true), rgb([255, 112, 0], true), rgb([224, 0, 0], true), rgb([224, 0, 0])];
-} else if (~process.env.COLORTERM.indexOf('256color')) {
-    const named = (color, isBG = false) => `\x1B[${8 + (isBG ? BG : COLOR)};5;${color}m`;
-    colors = [named(39, true), named(35, true), named(202, true), named(160, true), named(160)];
+if (process.env.COLORTERM) {
+    if (process.env.COLORTERM == 'truecolor' || process.env.COLORTERM == 'x24') {
+        const rgb = (color, isBG = false) => `\x1B[${8 + (isBG ? BG : COLOR)};2;${color[0]};${color[1]};${color[2]}m`;
+        colors = [rgb([0, 192, 255], true), rgb([0, 192, 64], true), rgb([255, 112, 0], true), rgb([224, 0, 0], true), rgb([224, 0, 0])];
+    } else if (~process.env.COLORTERM.indexOf('256color')) {
+        const named = (color, isBG = false) => `\x1B[${8 + (isBG ? BG : COLOR)};5;${color}m`;
+        colors = [named(39, true), named(35, true), named(202, true), named(160, true), named(160)];
+    }
 } else {
     colors = [ansi(6, true), ansi(2, true), ansi(3, true), ansi(1, true), ansi(1)];
 }
