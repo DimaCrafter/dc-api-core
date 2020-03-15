@@ -29,7 +29,7 @@ Information about [code styling are available here](docs/CodeStyling.md).
 ---
 
 ## Installation
-**0)** Run `npm init`
+**0)** Run `npm init` or `yarn init`
 
 **1)** Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
 
@@ -49,7 +49,7 @@ for Windows users
 "scripts": {
   "start": "dc-api-core",
   "dev": "dc-api-core --dev",
-  "init": "mkdir controllers && echo module.exports = class Index {} > ./controllers/Index.js"
+  "dc-init": "mkdir controllers && echo module.exports = class Index {} > ./controllers/Index.js"
 }
 ```
 **3)** Fill `config.json`
@@ -63,9 +63,9 @@ e.g.
     }
 }
 ```
-**4)** Run `npm run init`
+**4)** Run `npm run dc-init` or `yarn dc-init`
 
-**5)** Run `npm start`
+**5)** Run `npm start` or `yarn start`
 
 **6)** Done!
 
