@@ -29,7 +29,7 @@ Information about [code styling are available here](docs/CodeStyling.md).
 ---
 
 ## Installation
-**0)** Run `npm/yarn init`
+**0)** Run `npm init` or `yarn init`
 
 **1)** Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
 
