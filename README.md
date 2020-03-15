@@ -63,9 +63,9 @@ e.g.
     }
 }
 ```
-**4)** Run `npm run/yarn init`
+**4)** Run `npm run` or `yarn init`
 
-**5)** Run `npm/yarn start`
+**5)** Run `npm start` or `yarn start`
 
 **6)** Done!
 
