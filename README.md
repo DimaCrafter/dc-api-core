@@ -49,7 +49,7 @@ for Windows users
 "scripts": {
   "start": "dc-api-core",
   "dev": "dc-api-core --dev",
-  "init": "mkdir controllers && echo module.exports = class Index {} > ./controllers/Index.js"
+  "dc-init": "mkdir controllers && echo module.exports = class Index {} > ./controllers/Index.js"
 }
 ```
 **3)** Fill `config.json`
@@ -63,7 +63,7 @@ e.g.
     }
 }
 ```
-**4)** Run `npm run` or `yarn init`
+**4)** Run `npm run dc-init` or `yarn dc-init`
 
 **5)** Run `npm start` or `yarn start`
 
