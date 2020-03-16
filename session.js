@@ -49,7 +49,7 @@ module.exports = (token, onToken) => {
     return new Promise((resolve, reject) => {
         if (token) {
             jwt.verify(token, config.session.secret, (err, data) => {
-                if (err) return create();
+                if (err) return create(onToken, resolve, reject);
                 db.Session.findById(data._id).lean().exec((err, session) => {
                     if (err) return reject('Can`t get session');
                     if (!session) create(onToken, resolve, reject);
