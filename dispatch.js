@@ -49,6 +49,7 @@ const dispatch = {
         }
     },
 
+    WS_SYSTEM_EVENTS: ['open', 'close', 'error'],
     async ws (ws, req) {
         let obj = {};
         const controller = 'Socket';
@@ -79,8 +80,7 @@ const dispatch = {
             if (initProgress) await initProgress;
             try {
                 const parsed = JSON.parse(str);
-                if (parsed[0] == 'open') return;
-                ctx._replyEvent = parsed[0];
+                if (~parsed[0].indexOf(dispatch.WS_SYSTEM_EVENTS)) return;
                 ctx._args = parsed.slice(1);
                 await load(controller, parsed[0], ctx);
             } catch (err) {
@@ -90,12 +90,16 @@ const dispatch = {
         }
 
         obj.error = async (code, msg) => {
-            try {
-                ctx._args = [code, msg];
-                await load(controller, 'error', ctx);
-            } catch (err) {
-                msg = Buffer.from(msg);
-                log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);
+            if (code == 1000 || code == 1001) {
+                await load(controller, 'close', ctx, true);
+            } else {
+                msg = Buffer.from(msg).toString();
+                try {
+                    ctx._args = [code, msg];
+                    await load(controller, 'error', ctx);
+                } catch (err) {
+                    log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);
+                }
             }
         }
 

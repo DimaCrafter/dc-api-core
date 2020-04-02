@@ -84,11 +84,8 @@ module.exports = {
         };
 
         if (session.enabled) {
-            try {
-                ctx.session = await session(req.headers.token, token => res.headers.token = token);
-            } catch (err) {
-                ctx.err = err;
-            }
+            try { ctx.session = await session(req.headers.token, token => res.headers.token = token); }
+            catch (err) { ctx.err = err; }
         }
 
         return ctx;
@@ -96,25 +93,16 @@ module.exports = {
 
     async getWS (ws, req, token) {
         const ctx = getBase(req, ws);
-        ctx.emit = (event, msg, code = 0) => {
+        // emit(event, ...arguments);
+        ctx.emit = (...args) => {
             if (ws.isClosed) return log.warn('Trying to send message via closed socket');
-            ws.send(JSON.stringify({
-                success: code === 0,
-                code,
-                msg,
-                event
-            }));
-        };
-        ctx.send = (msg, code = 0) => {
-            if (this._replyEvent) this.emit(this._replyEvent, msg, code);
-            else log.warn('No event to reply');
+            ws.send(JSON.stringify(args));
         };
         ctx.end = (msg = '', code = 1000) => ws.end(code, msg);
 
-        try {
-            ctx.session = await session(token, token => ctx.emit('token', token));
-        } catch (err) {
-            ctx.err = err;
+        if (session.enabled) {
+            try { ctx.session = await session(token, token => ctx.emit('token', token)); }
+            catch (err) { ctx.err = err; }
         }
 
         return ctx;
