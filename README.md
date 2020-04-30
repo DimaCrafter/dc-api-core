@@ -158,6 +158,19 @@ require('dc-api-core/DB'): {
 * `template` - Object that overrides selected configuration.
 * `DBDriver` - Mongoose-like object (not always, defined by plugin)
 
+Example:
+
+```js
+const db = require('dc-api-core/DB').mongo();
+```
+
+Where `mongo` - your database-driver name.
+Example:
+If you're using MySQL, use DBDriver - `mysql`
+```js
+const db = require('dc-api-core/DB').mysql();
+```
+
 ## Plugins
 
 For first, install plugin package via `npm` or `yarn`.
