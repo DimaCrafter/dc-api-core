@@ -216,6 +216,7 @@ async test() {
 ### onLoad
 
 Executed before requesting a function in the controller.
+
 If the `onLoad` function returns false, the request been rejected.
 
 #### Example
