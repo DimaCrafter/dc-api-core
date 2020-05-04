@@ -234,7 +234,6 @@ module.exports = class Test {
 * [ ] Support for serving SPA
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
-* [ ] Redirect from HTTP to HTTPS (80 -> 443)
 * (WIP) Normal documentation (GitHub wiki or more `.md` files in `/docs`)
 * [ ] Routing rules & middlewares
 * (WIP) Local/remote (git) plugins and middlewares support
