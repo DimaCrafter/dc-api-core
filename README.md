@@ -189,6 +189,45 @@ If you want create your own plugin, read [plugin development documentation](docs
 
 ---
 
+## Sessions
+
+### Functions
+
+| Function               | Example                    | Description            |
+|------------------------|----------------------------|------------------------|
+| this.session.<name>    | this.session.name = 'User' | Set session data       |
+| this.session.save()    | await this.session.save()  | Save session data      |
+| this.session.destroy() | this.session.destroy()     | Clear all session data |
+ 
+### Example
+
+```js
+...
+async test() {
+ this.session.name = 'test';
+ await this.session.save();
+ this.send('saved', 200);
+}
+...
+```
+
+## Events
+
+### onLoad
+
+Executed before requesting a function in the controller.
+If the `onLoad` function returns false, the request been rejected.
+
+#### Example
+
+```js
+module.exports = class Test {
+ onLoad() {
+  if(!this.session.name) return false;
+ }
+}
+```
+
 ## My TODOs
 
 * [ ] Support for serving SPA
