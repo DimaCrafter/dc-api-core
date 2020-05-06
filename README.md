@@ -193,39 +193,39 @@ If you want create your own plugin, read [plugin development documentation](docs
 
 ### Functions
 
-| Function               | Example                    | Description            |
-|------------------------|----------------------------|------------------------|
-| this.session.<name>    | this.session.name = 'User' | Set session data       |
-| this.session.save()    | await this.session.save()  | Save session data      |
-| this.session.destroy() | this.session.destroy()     | Clear all session data |
+| Function                 | Example                      | Description            |
+|--------------------------|------------------------------|------------------------|
+| `this.session.<name>`    | `this.session.name = 'User'` | Set session data       |
+| `this.session.save()`    | `await this.session.save()`  | Save session data      |
+| `this.session.destroy()` | `this.session.destroy()`     | Clear all session data |
  
 ### Example
 
 ```js
-...
-async test() {
- this.session.name = 'test';
- await this.session.save();
- this.send('saved', 200);
+module.exports = class Controller {
+    async test () {
+        this.session.name = 'test';
+        await this.session.save();
+        this.send('saved');
+    }
 }
-...
 ```
 
-## Events
+## Request hooks
 
 ### onLoad
 
-Executed before requesting a function in the controller.
+Will be executed before calling action method in controller.
 
-If the `onLoad` function returns false, the request been rejected.
+If the `onLoad` function returns false, the request will be rejected.
 
 #### Example
 
 ```js
 module.exports = class Test {
- onLoad() {
-  if(!this.session.name) return false;
- }
+    onLoad () {
+        if (!this.session.user) return false;
+    }
 }
 ```
 
@@ -234,6 +234,6 @@ module.exports = class Test {
 * [ ] Support for serving SPA
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
-* (WIP) Normal documentation (GitHub wiki or more `.md` files in `/docs`)
+* (WIP) [Normal documentation](https://dimacrafter.github.io/dc-api-core)
 * [ ] Routing rules & middlewares
 * (WIP) Local/remote (git) plugins and middlewares support
