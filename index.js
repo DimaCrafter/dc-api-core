@@ -59,25 +59,27 @@ const fs = require('fs');
 		res.headers = {};
 		res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
 		res.headers['Access-Control-Expose-Headers'] = 'token';
-		
+
 		let body = Buffer.from('');
 		const onData = new Promise((resolve, reject) => {
 			res.onData((chunk, isLast) => {
 				body = Buffer.concat([body, Buffer.from(chunk)]);
 				if (isLast) {
 					if (body.length === 0) return resolve();
-					let type = req.headers['content-type'];
-					if (type === 'application/json') {
+					const contentType = req.headers['content-type'].split(';');
+					contentType[0] = contentType[0].toLowerCase();
+
+					if (contentType[0] == 'application/json') {
 						try { req.body = JSON.parse(body); }
 						catch (err) { reject(['Wrong JSON data', 400]); }
-					} else if (type === 'application/x-www-form-urlencoded') {
+					} else if (contentType[0] == 'application/x-www-form-urlencoded') {
 						req.body = {};
 						body.toString().split('&').forEach(line => {
 							line = line.split('=');
 							req.body[line[0]] = decodeURIComponent(line[1]);
 						});
-					} else if (type.startsWith('multipart/form-data')) {
-						req.body = multipart(type, body);
+					} else if (contentType[0] == 'multipart/form-data') {
+						req.body = multipart(contentType[1].slice(contentType[1].indexOf('boundary=') + 9), body);
 						if (req.body.json) {
 							try {
 								Object.assign(req.body, JSON.parse(req.body.json.content.toString()));
@@ -106,6 +108,7 @@ const fs = require('fs');
 	// Handling web sockets
 	app.ws('/socket', {
 		maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
+		idleTimeout: config.ttl || 0,
 		async open (ws, req) {
 			ws.isClosed = false;
 			req.headers = {};
@@ -115,7 +118,6 @@ const fs = require('fs');
 			} catch (err) {
 				log.error('+ws', err);
 			}
-
 		},
 		message (ws, msg, isBinary) { ws.dispatch.message(msg); },
 		drain (ws) {

@@ -14,7 +14,7 @@ async function getController (name) {
                 else reject([`Can't access ${name} controller`, 403]);
                 return;
             }
-            
+
             let controller = require(controllerPath);
             if (typeof controller != 'function') return reject([`Exported value from ${name} controller isn't a class`, 501]);
             controller = new controller();
@@ -25,7 +25,7 @@ async function getController (name) {
 
 async function load (controller, action, ctx, isOptional = false) {
     try { controller = await getController(controller); }
-    catch(err) { throw err; }
+    catch (err) { throw err; }
 
     ctx.controller = controller;
     if (controller.onLoad && controller.onLoad.apply(ctx)) return;
@@ -59,7 +59,7 @@ const dispatch = {
         const init = async token => {
             ctx = await utils.getWS(ws, req, token);
             if (ctx.err) return ctx.emit('error', ctx.err.toString(), 500);
-    
+
             try {
                 await load(controller, 'open', ctx, true);
             } catch (err) {
@@ -90,17 +90,19 @@ const dispatch = {
         }
 
         obj.error = async (code, msg) => {
-            if (code == 1000 || code == 1001) {
-                await load(controller, 'close', ctx, true);
-            } else {
+            if (code != 1000 && code != 1001) {
                 msg = Buffer.from(msg).toString();
                 try {
-                    ctx._args = [code, msg];
-                    await load(controller, 'error', ctx);
+                    if (ctx) {
+                        ctx._args = [code, msg];
+                        await load(controller, 'error', ctx);
+                    }
                 } catch (err) {
                     log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);
                 }
             }
+
+            if (ctx) await load(controller, 'close', ctx, true);
         }
 
         return obj;

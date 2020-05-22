@@ -55,7 +55,7 @@ function parseHeader (target, raw) {
 
 module.exports = (boundary, body) => {
 	let result = {};
-	boundary = Buffer.from('--' + boundary.split('boundary=')[1]);
+	boundary = Buffer.from('--' + boundary);
 	split(body, boundary).forEach(part => {
 		let data = {};
 		part.headers = Buffer.from(part.headers).toString().split('\r\n');

@@ -72,7 +72,7 @@ module.exports = {
             // TODO: make code - status object
             res.writeStatus(code.toString());
             for (const header in res.headers) res.writeHeader(header, res.headers[header]);
-            
+
             if (isPure) {
                 if (typeof data === 'string') res.writeHeader('Content-Type', 'text/plain');
                 else if (data instanceof Buffer) res.writeHeader('Content-Type', 'application/octet-stream');

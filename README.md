@@ -111,6 +111,7 @@ Options:
 | `ignore`              | `[]`                | Excluded directories in development mode     |
 | `isDev`               | Read-only           | `true` if using `--dev` argument             |
 | `dev`                 | `{}`                | Config to merge if `isDev` is `true`         |
+| `ttl`                 | `0`                 | WebSocket TTL in seconds, `0` - disabled     |
 
 [zeit/ms]: https://github.com/zeit/ms
 
@@ -158,6 +159,19 @@ require('dc-api-core/DB'): {
 * `template` - Object that overrides selected configuration.
 * `DBDriver` - Mongoose-like object (not always, defined by plugin)
 
+Example:
+
+```js
+const db = require('dc-api-core/DB').mongo();
+```
+
+Where `mongo` - your database-driver name.
+Example:
+If you're using MySQL, use DBDriver - `mysql`
+```js
+const db = require('dc-api-core/DB').mysql();
+```
+
 ## Plugins
 
 For first, install plugin package via `npm` or `yarn`.
@@ -176,12 +190,51 @@ If you want create your own plugin, read [plugin development documentation](docs
 
 ---
 
+## Sessions
+
+### Functions
+
+| Function                 | Example                      | Description            |
+|--------------------------|------------------------------|------------------------|
+| `this.session.<name>`    | `this.session.name = 'User'` | Set session data       |
+| `this.session.save()`    | `await this.session.save()`  | Save session data      |
+| `this.session.destroy()` | `this.session.destroy()`     | Clear all session data |
+ 
+### Example
+
+```js
+module.exports = class Controller {
+    async test () {
+        this.session.name = 'test';
+        await this.session.save();
+        this.send('saved');
+    }
+}
+```
+
+## Request hooks
+
+### onLoad
+
+Will be executed before calling action method in controller.
+
+If the `onLoad` function returns false, the request will be rejected.
+
+#### Example
+
+```js
+module.exports = class Test {
+    onLoad () {
+        if (!this.session.user) return false;
+    }
+}
+```
+
 ## My TODOs
 
 * [ ] Support for serving SPA
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
-* [ ] Redirect from HTTP to HTTPS (80 -> 443)
-* (WIP) Normal documentation (GitHub wiki or more `.md` files in `/docs`)
+* (WIP) [Normal documentation](https://dimacrafter.github.io/dc-api-core)
 * [ ] Routing rules & middlewares
 * (WIP) Local/remote (git) plugins and middlewares support
