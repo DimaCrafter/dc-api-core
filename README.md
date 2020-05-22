@@ -230,6 +230,10 @@ module.exports = class Test {
 }
 ```
 
+## Need more examples
+
+More example you can find in repository [mayerdev/dc-api-examples](https://github.com/mayerdev/dc-api-examples)
+
 ## My TODOs
 
 * [ ] Support for serving SPA
