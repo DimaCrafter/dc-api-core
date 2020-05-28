@@ -230,6 +230,34 @@ module.exports = class Test {
 }
 ```
 
+## Working with config.json
+
+### Require
+
+Require config module:
+
+```js
+const config = require('dc-api-core/config');
+```
+
+Get data:
+
+```js
+config.<your_param>
+```
+
+#### Example
+
+```js
+const config = require('dc-api-core/config');
+
+module.exports = class Test {
+    index() {
+     this.send(config.myParam);
+    }
+}
+```
+
 ## Need more examples
 
 More example you can find in repository [mayerdev/dc-api-examples](https://github.com/mayerdev/dc-api-examples)
