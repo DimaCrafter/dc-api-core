@@ -65,7 +65,7 @@ const fs = require('fs');
 			res.onData((chunk, isLast) => {
 				body = Buffer.concat([body, Buffer.from(chunk)]);
 				if (isLast) {
-					if (body.length === 0) return resolve();
+					if (body.length === 0 || !req.headers['content-type']) return resolve();
 					const contentType = req.headers['content-type'].split(';');
 					contentType[0] = contentType[0].toLowerCase();
 
