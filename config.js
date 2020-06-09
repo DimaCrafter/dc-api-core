@@ -33,4 +33,5 @@ if (config.isDev) {
 
 delete config.dev;
 if (config.session) config.session.ttl = config.session.ttl || '3d';
+if (config.port == '$env') config.port = process.env.PORT;
 module.exports = config;

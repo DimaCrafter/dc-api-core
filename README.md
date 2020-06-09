@@ -119,7 +119,7 @@ Example:
 
 ```json
 {
-    "port": 443,
+    "port": "$env", // Equals value of process.env.PORT
     "db": {
         "mongo": {
             "host": "localhost",
