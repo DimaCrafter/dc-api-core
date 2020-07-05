@@ -1,10 +1,13 @@
 const uWS = require('uWebSockets.js');
 require('./plugins').init();
+
 const utils = require('./utils');
 const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
 const multipart = require('./multipart');
+const Router = require('dc-api-core/router');
+
 const app = (() => {
 	if (config.ssl) {
 		const opts = { ...config.ssl };
@@ -42,6 +45,7 @@ const fs = require('fs');
 		res.aborted = false;
 		res.onAborted(() => res.aborted = true);
 		req.path = req.getUrl();
+		req._matchedRoute = Router.match(req.path);
 
 		req.query = req.getQuery();
 		let query = {};

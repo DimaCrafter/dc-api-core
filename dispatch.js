@@ -35,13 +35,22 @@ async function load (controller, action, ctx, isOptional = false) {
 
 const dispatch = {
     async http (req, res) {
-        // Getting controller and action from path
-        let [controller, action] = req.path.split('/').slice(1);
+        const target = req._matchedRoute
+            // Using target predefined for this route
+            ? req._matchedRoute.target
+            // Getting controller and action from path
+            : req.path.split('/').slice(1);
+
         const ctx = await utils.getHTTP(req, res);
         if (ctx.err) return ctx.send(ctx.err, 500);
 
+        if (req._matchedRoute) {
+            ctx.params = req._matchedRoute.params;
+            delete req._matchedRoute;
+        }
+
         try {
-            await load(controller, action, ctx);
+            await load(target[0], target[1], ctx);
         } catch (err) {
             if (err instanceof Array) { ctx.send(...err); }
             else { ctx.send(err.toString(), 500); }

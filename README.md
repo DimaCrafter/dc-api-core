@@ -258,9 +258,33 @@ module.exports = class Test {
 }
 ```
 
+## Routing
+
+Register route in startup script:
+
+```js
+// startup.js
+const Router = require('dc-api-core/router');
+Router.register('/testing/files/${id}/${file}.jpg', 'Test.getFile');
+```
+
+Now requests like `/testing/files/some-id/secret_file.jpg` will call `getFile` method of `Test` controller.
+
+```js
+// controllers/Test.js
+class Test {
+    async getFile () {
+        this.send(this.params);
+        // Witll send { "id": "some-id", "file": "secret_file" }
+    }
+}
+
+module.exports = Test;
+```
+
 ## Need more examples?
 
-More example you can find in repository [mayerdev/dc-api-examples](https://github.com/mayerdev/dc-api-examples)
+More examples you can find in [mayerdev/dc-api-examples](https://github.com/mayerdev/dc-api-examples) repository.
 
 ## My TODOs
 
@@ -269,5 +293,5 @@ More example you can find in repository [mayerdev/dc-api-examples](https://githu
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
 * (WIP) [Normal documentation](https://dimacrafter.github.io/dc-api-core)
-* [ ] Routing rules & middlewares
+* [ ] Middlewares
 * (WIP) Local/remote (git) plugins and middlewares support
