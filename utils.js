@@ -38,8 +38,16 @@ function getIP (req, res) {
 function getBase (req, res) {
     let controllerProxy;
     const ctx = {
-        get db () { log.warn('`this.db` is deprecated, use require(\'dc-api-core/DB\') instead'); },
         query: req.query,
+        header (name, value) {
+            name = name.toLowerCase();
+            if (value !== undefined) {
+                if (value == null) delete res.headers[name];
+                else res.headers[name] = value;
+            } else {
+                return req.headers[name];
+            }
+        },
         ROOT: process.cwd(),
         redirect (url) {
             res.writeStatus('302 Found');
@@ -74,8 +82,10 @@ module.exports = {
             for (const header in res.headers) res.writeHeader(header, res.headers[header]);
 
             if (isPure) {
-                if (typeof data === 'string') res.writeHeader('Content-Type', 'text/plain');
-                else if (data instanceof Buffer) res.writeHeader('Content-Type', 'application/octet-stream');
+                if (!res.headers['content-type']) {
+                    if (typeof data === 'string') res.writeHeader('Content-Type', 'text/plain');
+                    else if (data instanceof Buffer) res.writeHeader('Content-Type', 'application/octet-stream');
+                }
                 res.end(data);
             } else {
                 res.writeHeader('Content-Type', 'application/json');

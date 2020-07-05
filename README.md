@@ -258,12 +258,13 @@ module.exports = class Test {
 }
 ```
 
-## Need more examples
+## Need more examples?
 
 More example you can find in repository [mayerdev/dc-api-examples](https://github.com/mayerdev/dc-api-examples)
 
 ## My TODOs
 
+* [ ] Support for kernel < 3.0
 * [ ] Support for serving SPA
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
