@@ -1,4 +1,5 @@
 const log = require('./log');
+const ms = require('ms');
 const cfgArg = process.argv.indexOf('--cfg');
 
 let configPath = process.cwd() + '/config';
@@ -31,7 +32,11 @@ if (config.isDev) {
     if (!~config.ignore.indexOf('node_modules')) config.ignore.push('node_modules');
 }
 
+if (config.session) {
+    config.session.ttl = config.session.ttl || '3d';
+    if (typeof config.session.ttl == 'string') config.session.ttl = ms(config.session.ttl);
+}
+
 delete config.dev;
-if (config.session) config.session.ttl = config.session.ttl || '3d';
 if (config.port == '$env') config.port = process.env.PORT;
 module.exports = config;

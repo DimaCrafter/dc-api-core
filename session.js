@@ -1,15 +1,46 @@
-const jwt = require('jsonwebtoken');
+const jwa = require('jwa')('HS256');
+const { ObjectIdFromTime } = require('./DB');
 const config = require('./config');
 
 let db;
 if (config.session) {
-    let cfg = config.session.store.split('.');
+    const cfg = config.session.store.split('.');
     db = require('./DB')[cfg[0]](cfg[1]);
+
     const dbCfg = config.db[config.session.store];
-    dbCfg.nonStrict ? dbCfg.nonStrict.push('Session') : (dbCfg.nonStrict = ['Session']);
+    if (dbCfg.nonStrict) dbCfg.nonStrict.push('Session')
+    else dbCfg.nonStrict = ['Session'];
+
+    function cleanup () {
+        db.Session.deleteMany({ _id: { $lte: ObjectIdFromTime(Date.now() - config.session.ttl) } });
+    }
+
+    cleanup();
+    setInterval(() => cleanup, config.session.ttl / 2);
 }
 
-function parse (document) {
+function cryptSession (_id) {
+    let result = { _id, expires: Date.now() + config.session.ttl };
+    result.sign = jwa.sign(result, config.session.secret);
+    return JSON.stringify(result);
+}
+
+function decodeSession (input) {
+    try {
+        input = JSON.parse(input);
+    } catch (err) {
+        return;
+    }
+    
+    const sign = input.sign;
+    delete input.sign;
+
+    if (!jwa.verify(input, sign, config.session.secret)) return;
+    if (input.expires <= Date.now()) return;
+    return input;
+}
+
+function wrap (document) {
     document.save = cb => {
         if (!document._id) return log.error('Can`t save session, _id field not present');
         const data = {};
@@ -29,37 +60,26 @@ function parse (document) {
     return document;
 }
 
+module.exports = {
+    enabled: !!config.session,
+    async create () {
+        const session = await db.Session.create({});
+        return {
+            header: cryptSession(session._id),
+            object: wrap(session.toObject())
+        };
+    },
+    async parse (header) {
+        if (!header) return await this.create();
+        
+        const parsed = decodeSession(header);
+        if (!parsed) return await this.create();
+        
+        let session = await db.Session.findById(parsed._id).lean();
+        if (!session) return await this.create();
 
-function create (onToken, resolve, reject) {
-    db.Session.create({}, (err, session) => {
-        if (err) return reject('Can`t create session');
-        jwt.sign({ _id: session._id }, config.session.secret, {
-            expiresIn: config.session.ttl
-        }, (err, token) => {
-            if (err) return reject('Can`t sign session');
-            session.token = token;
-            session.save();
-            onToken(token);
-            resolve(parse(session.toObject()));
-        });
-    });
-}
-
-module.exports = (token, onToken) => {
-    return new Promise((resolve, reject) => {
-        if (token) {
-            jwt.verify(token, config.session.secret, (err, data) => {
-                if (err) return create(onToken, resolve, reject);
-                db.Session.findById(data._id).lean().exec((err, session) => {
-                    if (err) return reject('Can`t get session');
-                    if (!session) create(onToken, resolve, reject);
-                    else resolve(parse(session));
-                });
-            });
-        } else {
-            create(onToken, resolve, reject);
-        }
-    });
+        return {
+            object: wrap(session)
+        };
+    }
 };
-
-module.exports.enabled = !!config.session;

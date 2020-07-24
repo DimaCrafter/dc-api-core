@@ -1,5 +1,5 @@
 const log = require('./log');
-const session = require('./session');
+const Session = require('./session');
 
 function getIP (req, res) {
     // Parsing
@@ -94,15 +94,20 @@ module.exports = {
             res.end();
         };
 
-        if (session.enabled) {
-            try { ctx.session = await session(req.headers.token, token => res.headers.token = token); }
-            catch (err) { ctx.err = err; }
+        if (Session.enabled) {
+            try {
+                const session = await Session.parse(req.headers.session);
+                if (session.header) res.headers.session = session.header;
+                ctx.session = session.object;
+            } catch (err) {
+                ctx.err = err;
+            }
         }
 
         return ctx;
     },
 
-    async getWS (ws, token) {
+    async getWS (ws, sessionHeader) {
         // `req` and `res` in `getBase` used only to get
         // request/response values, that combined in `ws`
         const ctx = getBase(ws, ws);
@@ -113,9 +118,14 @@ module.exports = {
         };
         ctx.end = (msg = '', code = 1000) => ws.end(code, msg);
 
-        if (session.enabled) {
-            try { ctx.session = await session(token, token => ctx.emit('token', token)); }
-            catch (err) { ctx.err = err; }
+        if (Session.enabled) {
+            try {
+                const session = await Session.parse(sessionHeader);
+                if (session.header) ctx.emit('session', session.header);
+                ctx.session = session.object;
+            } catch (err) {
+                ctx.err = err;
+            }
         }
 
         return ctx;

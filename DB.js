@@ -1,19 +1,22 @@
-/* // TODO: add this
-function ObjectIdFromTime (timestamp) {
-    if (typeof timestamp == 'string') timestamp = new Date(timestamp).getTime();
-    var hexSeconds = Math.floor(timestamp / 1000).toString(16);
-    return hexSeconds + '0000000000000000';
-}
-*/
+
 const config = require('./config');
 const log = require('./log');
 const Plugins = require('./plugins');
 
+const exported = {
+    ObjectIdFromTime (timestamp) {
+        if (typeof timestamp == 'string') timestamp = new Date(timestamp).getTime();
+        else if (timestamp instanceof Date) timestamp = timestamp.getTime();
+
+        return (~~(timestamp / 1000)).toString(16) + '0000000000000000';
+    }
+};
+
 let connections = {};
 module.exports = new Proxy(Plugins.types.db, {
     get (drivers, driverName) {
-        // Return primitive values
-        if (driverName in {}) return ({})[driverName];
+        if (driverName in exported) return exported[driverName];
+
         if (driverName in drivers) {
             return (confName, options) => {
                 if (options && !options.identifier && !options.name) return log.warn('Templated connection to database must have `identifier` field');

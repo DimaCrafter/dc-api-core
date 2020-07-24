@@ -4,7 +4,8 @@
 
 ## Dependencies
 
-* [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
+* [jwa](https://github.com/auth0/node-jwa)
+* [zeit/ms](https://github.com/zeit/ms)
 * [μWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
 * [watch](https://github.com/mikeal/watch)
 
@@ -117,7 +118,7 @@ Options:
 
 Example:
 
-```json
+```js
 {
     "port": "$env", // Equals value of process.env.PORT
     "db": {

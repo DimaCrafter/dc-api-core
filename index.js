@@ -23,7 +23,6 @@ const app = (() => {
 
 const ROOT = process.cwd();
 const fs = require('fs');
-const { parse } = require('path');
 (async () => {
 	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
@@ -36,7 +35,7 @@ const { parse } = require('path');
 	// CORS preflight request
 	app.options('/*', (res, req) => {
 		res.writeHeader('Access-Control-Allow-Methods', 'GET, POST');
-		res.writeHeader('Access-Control-Allow-Headers', 'content-type, token');
+		res.writeHeader('Access-Control-Allow-Headers', 'content-type, session');
 		res.writeHeader('Access-Control-Max-Age', '86400');
 		res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
 		res.writeStatus('200 OK');
@@ -53,7 +52,7 @@ const { parse } = require('path');
 
 		res.headers = {};
 		res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
-		res.headers['Access-Control-Expose-Headers'] = 'token';
+		res.headers['Access-Control-Expose-Headers'] = 'session';
 
 		let body = Buffer.from('');
 		const onData = new Promise((resolve, reject) => {

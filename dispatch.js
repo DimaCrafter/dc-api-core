@@ -1,5 +1,5 @@
 const ROOT = process.cwd();
-const utils = require('./context');
+const context = require('./context');
 const log = require('./log');
 const path = require('path');
 const fs = require('fs');
@@ -41,8 +41,8 @@ const dispatch = {
             // Getting controller and action from path
             : req.path.split('/').slice(1);
 
-        const ctx = await utils.getHTTP(req, res);
-        if (ctx.err) return ctx.send(ctx.err, 500);
+        const ctx = await context.getHTTP(req, res);
+        if (ctx.err) return ctx.send(ctx.err.toString(), 500);
 
         if (req._matchedRoute) {
             ctx.params = req._matchedRoute.params;
@@ -65,8 +65,8 @@ const dispatch = {
         let ctx;
 
         let initProgress;
-        const init = async token => {
-            ctx = await utils.getWS(ws, token);
+        const init = async session => {
+            ctx = await context.getWS(ws, session);
             if (ctx.err) return ctx.emit('error', ctx.err.toString(), 500);
 
             try {
@@ -81,8 +81,8 @@ const dispatch = {
         obj.message = async msg => {
             const buf = Buffer.from(msg);
             const str = buf.toString();
-            if (str.startsWith('token:')) {
-                initProgress = init(str.slice(6));
+            if (str.startsWith('session:')) {
+                initProgress = init(str.slice(8));
                 return;
             }
 
