@@ -1,5 +1,5 @@
 const ROOT = process.cwd();
-const utils = require('./utils');
+const utils = require('./context');
 const log = require('./log');
 const path = require('path');
 const fs = require('fs');
@@ -23,13 +23,13 @@ async function getController (name) {
     });
 }
 
-async function load (controller, action, ctx, isOptional = false) {
+async function load (controller, action, ctx, isOptional, args) {
     try { controller = await getController(controller); }
     catch (err) { throw err; }
 
     ctx.controller = controller;
     if (controller.onLoad && controller.onLoad.apply(ctx)) return;
-    if (action in controller) return controller[action].apply(ctx, ctx._args);
+    if (action in controller) return controller[action].apply(ctx, args);
     else if (!isOptional) throw [`API ${controller.constructor.name}.${action} action not found`, 404];
 }
 
@@ -59,14 +59,14 @@ const dispatch = {
     },
 
     WS_SYSTEM_EVENTS: ['open', 'close', 'error'],
-    async ws (ws, req) {
+    async ws (ws) {
         let obj = {};
         const controller = 'Socket';
         let ctx;
 
         let initProgress;
         const init = async token => {
-            ctx = await utils.getWS(ws, req, token);
+            ctx = await utils.getWS(ws, token);
             if (ctx.err) return ctx.emit('error', ctx.err.toString(), 500);
 
             try {
@@ -90,8 +90,7 @@ const dispatch = {
             try {
                 const parsed = JSON.parse(str);
                 if (~parsed[0].indexOf(dispatch.WS_SYSTEM_EVENTS)) return;
-                ctx._args = parsed.slice(1);
-                await load(controller, parsed[0], ctx);
+                await load(controller, parsed[0], ctx, false, parsed.slice(1));
             } catch (err) {
                 if (err instanceof Array) { ctx.emit('error', ...err); }
                 else { ctx.emit('error', err.toString(), 500); }
@@ -102,10 +101,7 @@ const dispatch = {
             if (code != 1000 && code != 1001) {
                 msg = Buffer.from(msg).toString();
                 try {
-                    if (ctx) {
-                        ctx._args = [code, msg];
-                        await load(controller, 'error', ctx);
-                    }
+                    if (ctx) await load(controller, 'error', ctx, false, [code, msg]);
                 } catch (err) {
                     log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);
                 }

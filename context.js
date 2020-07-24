@@ -48,14 +48,9 @@ function getBase (req, res) {
                 return req.headers[name];
             }
         },
-        ROOT: process.cwd(),
-        redirect (url) {
-            res.writeStatus('302 Found');
-            res.writeHeader('Location', url);
-            res.end();
-        },
         address: getIP(req, res),
 
+        get controller () { return controllerProxy; },
         set controller (controller) {
             controllerProxy = new Proxy(controller, {
                 get (obj, prop) {
@@ -63,8 +58,7 @@ function getBase (req, res) {
                     return obj[prop];
                 }
             });
-        },
-        get controller () { return controllerProxy; }
+        }
     };
 
     return ctx;
@@ -93,6 +87,13 @@ module.exports = {
             }
         };
 
+        ctx.redirect = url => {
+            if (res.aborted) return;
+            res.writeStatus('302 Found');
+            res.writeHeader('Location', url);
+            res.end();
+        };
+
         if (session.enabled) {
             try { ctx.session = await session(req.headers.token, token => res.headers.token = token); }
             catch (err) { ctx.err = err; }
@@ -101,8 +102,10 @@ module.exports = {
         return ctx;
     },
 
-    async getWS (ws, req, token) {
-        const ctx = getBase(req, ws);
+    async getWS (ws, token) {
+        // `req` and `res` in `getBase` used only to get
+        // request/response values, that combined in `ws`
+        const ctx = getBase(ws, ws);
         // emit(event, ...arguments);
         ctx.emit = (...args) => {
             if (ws.isClosed) return log.warn('Trying to send message via closed socket');

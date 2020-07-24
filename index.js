@@ -1,12 +1,14 @@
 const uWS = require('uWebSockets.js');
 require('./plugins').init();
 
-const utils = require('./utils');
+const context = require('./context');
 const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
-const multipart = require('./multipart');
-const Router = require('dc-api-core/router');
+const Router = require('./router');
+
+const multipart = require('./utils/multipart');
+const parseRequest = require('./utils/request-parser');
 
 const app = (() => {
 	if (config.ssl) {
@@ -21,6 +23,7 @@ const app = (() => {
 
 const ROOT = process.cwd();
 const fs = require('fs');
+const { parse } = require('path');
 (async () => {
 	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
@@ -46,19 +49,7 @@ const fs = require('fs');
 		res.onAborted(() => res.aborted = true);
 		req.path = req.getUrl();
 		req._matchedRoute = Router.match(req.path);
-
-		req.query = req.getQuery();
-		let query = {};
-		req.query.split('&').forEach(p => {
-			let [key, val] = p.split('=');
-			if (val === undefined) val = true;
-			else val = decodeURIComponent(val);
-			query[key] = val;
-		});
-		req.query = query;
-
-		req.headers = {};
-		req.forEach((k, v) => req.headers[k] = v);
+		parseRequest(req, req);
 
 		res.headers = {};
 		res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
@@ -106,7 +97,7 @@ const fs = require('fs');
 			await onData;
 			await dispatch.http(req, res);
 		} catch (err) {
-			(await utils.getHTTP(req, res)).send(...err);
+			(await context.getHTTP(req, res)).send(...err);
 		}
 	});
 
@@ -114,21 +105,26 @@ const fs = require('fs');
 	app.ws('/socket', {
 		maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
 		idleTimeout: config.ttl || 0,
-		async open (ws, req) {
-			ws.isClosed = false;
-			req.headers = {};
-			req.forEach((k, v) => req.headers[k] = v);
+		upgrade (res, req, context) {
+			const ws = { isClosed: false };
+			parseRequest(req, ws);
+
+			res.upgrade(
+				ws,
+				ws.headers['sec-websocket-key'],
+				ws.headers['sec-websocket-protocol'],
+				ws.headers['sec-websocket-extensions'],
+				context
+			);
+		},
+		async open (ws) {
 			try {
-				ws.dispatch = await dispatch.ws(ws, req);
+				ws.dispatch = await dispatch.ws(ws);
 			} catch (err) {
-				log.error('+ws', err);
+				log.error('WebSocket request dispatch error', err);
 			}
 		},
 		message (ws, msg, isBinary) { ws.dispatch.message(msg); },
-		drain (ws) {
-			// ? What means `drain` event?
-			// log.error('WebSocket backpressure: ' + ws.getBufferedAmount());
-		},
 		close (ws, code, msg) {
 			ws.isClosed = true;
 			ws.dispatch.error(code, msg);
