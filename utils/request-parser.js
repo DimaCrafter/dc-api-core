@@ -5,7 +5,7 @@ module.exports = (req, out) => {
 		if (!pair) continue;
 		let eqPos = pair.indexOf('=');
 		if (~eqPos) {
-			query[pair.slice(0, i)] = decodeURIComponent(pair.slice(i + 1));
+			query[pair.slice(0, eqPos)] = decodeURIComponent(pair.slice(eqPos + 1));
 		} else {
 			query[pair] = true;
 		}
