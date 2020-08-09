@@ -21,6 +21,16 @@ const app = (() => {
 	}
 })();
 
+const errorHandlers = [];
+function emitError (info) {
+	for (const handler of errorHandlers) {
+		handler(info);
+	}
+}
+
+exports.emitError = emitError;
+exports.onError = handler => errorHandlers.push(handler);
+
 const ROOT = process.cwd();
 const fs = require('fs');
 (async () => {
@@ -64,27 +74,63 @@ const fs = require('fs');
 					const contentType = req.headers['content-type'].split(';');
 					contentType[0] = contentType[0].toLowerCase();
 
-					if (contentType[0] == 'application/json') {
-						try { req.body = JSON.parse(body); }
-						catch (err) { reject(['Wrong JSON data', 400]); }
-					} else if (contentType[0] == 'application/x-www-form-urlencoded') {
-						req.body = {};
-						body.toString().split('&').forEach(line => {
-							line = line.split('=');
-							req.body[line[0]] = decodeURIComponent(line[1]);
-						});
-					} else if (contentType[0] == 'multipart/form-data') {
-						req.body = multipart(contentType[1].slice(contentType[1].indexOf('boundary=') + 9), body);
-						if (req.body.json) {
+					switch (contentType[0]) {
+						case 'application/json':
 							try {
-								Object.assign(req.body, JSON.parse(req.body.json.content.toString()));
-								delete req.body.json;
+								req.body = JSON.parse(body);
 							} catch (err) {
-								reject(['Wrong JSON data', 400]);
+								emitError({
+									isSystem: true,
+									type: 'RequestError',
+									code: 400,
+									url: req.path,
+									message: 'Wrong JSON data',
+									error: err,
+									body
+								});
+
+								return reject(['Wrong JSON data', 400]);
 							}
-						}
-					} else {
-						reject(['Content-Type not supported', 400]);
+							break;
+						case 'application/x-www-form-urlencoded':
+							req.body = {};
+							for (let line of body.toString().split('&')) {
+								line = line.split('=');
+								req.body[line[0]] = decodeURIComponent(line[1]);
+							}
+							break;
+						case 'multipart/form-data':
+							req.body = multipart(contentType[1].slice(contentType[1].indexOf('boundary=') + 9), body);
+							if (req.body.json) {
+								try {
+									Object.assign(req.body, JSON.parse(req.body.json.content.toString()));
+									delete req.body.json;
+								} catch (err) {
+									emitError({
+										isSystem: true,
+										type: 'RequestError',
+										code: 400,
+										url: req.path,
+										message: 'Wrong JSON data',
+										error: err,
+										body: req.body.json.content.toString()
+									});
+
+									return reject(['Wrong JSON data', 400]);
+								}
+							}
+							break;
+						default:
+							emitError({
+								isSystem: true,
+								type: 'RequestError',
+								code: 400,
+								url: req.path,
+								message: 'Content-Type not supported',
+								value: contentType[0]
+							});
+
+							return reject(['Content-Type not supported', 400]);
 					}
 
 					resolve();

@@ -290,9 +290,9 @@ More examples you can find in [mayerdev/dc-api-examples](https://github.com/maye
 ## My TODOs
 
 * [ ] Support for kernel < 3.0
-* [ ] Support for serving SPA
+* [ ] Support for serving SPA (useless?)
 * [ ] Typing (`.d.ts` files)
 * [ ] WebSocket fallback (like socket.io)
 * (WIP) [Normal documentation](https://dimacrafter.github.io/dc-api-core)
-* [ ] Middlewares
+* (WIP) Middlewares
 * (WIP) Local/remote (git) plugins and middlewares support

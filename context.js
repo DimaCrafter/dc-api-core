@@ -1,3 +1,4 @@
+const core = require('.');
 const log = require('./log');
 const Session = require('./session');
 
@@ -100,7 +101,9 @@ function getResponseStatus (code) {
 module.exports = {
     async getHTTP (req, res) {
         const ctx = getBase(req, res);
+        ctx.type = 'http';
         ctx.data = req.body;
+
         ctx.send = (data, code = 200, isPure = false) => {
             if (res.aborted) return;
             res.aborted = true;
@@ -134,6 +137,13 @@ module.exports = {
                 ctx.session = session.object;
             } catch (err) {
                 ctx.err = err;
+                core.emitError({
+                    isSystem: true,
+                    type: 'SessionError',
+                    code: 500,
+                    message: err.message,
+                    error: err
+                });
             }
         }
 
@@ -144,11 +154,14 @@ module.exports = {
         // `req` and `res` in `getBase` used only to get
         // request/response values, that combined in `ws`
         const ctx = getBase(ws, ws);
+        ctx.type = 'ws';
+
         // emit(event, ...arguments);
         ctx.emit = (...args) => {
             if (ws.isClosed) return log.warn('Trying to send message via closed socket');
             ws.send(JSON.stringify(args));
         };
+
         ctx.end = (msg = '', code = 1000) => ws.end(code, msg);
 
         if (Session.enabled) {
@@ -158,6 +171,13 @@ module.exports = {
                 ctx.session = session.object;
             } catch (err) {
                 ctx.err = err;
+                core.emitError({
+                    isSystem: true,
+                    type: 'SessionError',
+                    code: 500,
+                    message: err.message,
+                    error: err
+                });
             }
         }
 

@@ -1,4 +1,4 @@
-
+const core = require('.');
 const config = require('./config');
 const log = require('./log');
 const Plugins = require('./plugins');
@@ -35,8 +35,17 @@ module.exports = new Proxy(Plugins.types.db, {
                     const driver = new drivers[driverName](cfg, confName);
                     driver.cfg = cfg;
                     driver.on('connected', err => {
-                        if (err) log.error(`Connection to database failed (${connName})`, err);
-                        else log.success(`Connected to database (${connName})`);
+                        if (err) {
+                            log.error(`Connection to database failed (${connName})`, err);
+                            core.emitError({
+                                isSystem: true,
+                                type: 'DatabaseConnectionError',
+                                name: connName,
+                                error: err
+                            });
+                        } else {
+                            log.success(`Connected to database (${connName})`);
+                        }
                     });
                     driver.on('no-model', name => log.warn(`Database model ${confName}.${name} not found`));
 
