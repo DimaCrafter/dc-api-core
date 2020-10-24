@@ -9,7 +9,7 @@
 	"license": "MIT",
 	"bin": "cli.js",
 	"dependencies": {
-		"uwebsockets.js": "^18.3.0"
+		"uwebsockets.js": "^18.3.0",
 		"jwa": "^2.0.0",
 		"ms": "^2.1.2",
 		"watch": "^1.0.2"
