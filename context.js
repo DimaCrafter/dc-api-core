@@ -2,67 +2,107 @@ const core = require('.');
 const log = require('./log');
 const Session = require('./session');
 
-function getIP (req, res) {
-    // Parsing
-    let ipRaw = Buffer.from(res.getRemoteAddress()).toString('hex');
-
-    // Using X-Real-IP in docker container (172.18.XXX.XXX -> AC12XXXX) or on localhost
-    if ((ipRaw.slice(24, 28) == 'ac12' || ipRaw == '00000000000000000000000000000001' || ipRaw == '00000000000000000000ffff7f000001') && req.headers['x-real-ip']) {
-        ipRaw = req.headers['x-real-ip'];
-        return {
-            type: ~ipRaw.indexOf('.') ? 'ipv4' : 'ipv6',
-            value: ipRaw
-        };
-    }
-
-    // Formatting
-    const ipParts = [];
-    for (let i = 0; i < ipRaw.length; i += 4) ipParts.push(ipRaw.slice(i, i + 4));
-    if (ipParts[ipParts.length - 3] == 'ffff') {
-        const ipv4 = [];
-        ipv4.push(parseInt(ipParts[ipParts.length - 2].slice(0, 2), 16));
-        ipv4.push(parseInt(ipParts[ipParts.length - 2].slice(2), 16));
-        ipv4.push(parseInt(ipParts[ipParts.length - 1].slice(0, 2), 16));
-        ipv4.push(parseInt(ipParts[ipParts.length - 1].slice(2), 16));
-        return {
-            type: 'ipv4',
-            value: ipv4.join('.')
-        };
-    } else {
-        return {
-            type: 'ipv6',
-            value: ipParts.join(':')
-        };
-    }
+function parseIPv6Part (part) {
+    let result = part.toString(16);
+    if (result[1]) return result;
+    else return '0' + result;
 }
 
-function getBase (req, res) {
-    let controllerProxy;
-    const ctx = {
-        query: req.query,
-        header (name, value) {
-            name = name.toLowerCase();
-            if (value !== undefined) {
-                if (value == null) delete res.headers[name];
-                else res.headers[name] = value;
-            } else {
-                return req.headers[name];
-            }
-        },
-        address: getIP(req, res),
+class ControllerBaseContext {
+    constructor (req, res) {
+        this._req = req;
+        this._res = res;
 
-        get controller () { return controllerProxy; },
-        set controller (controller) {
-            controllerProxy = new Proxy(controller, {
-                get (obj, prop) {
-                    if (typeof obj[prop] === 'function') return obj[prop].bind(ctx);
-                    return obj[prop];
-                }
-            });
+        this.query = req.query;
+    }
+
+    header (name, value) {
+        name = name.toLowerCase();
+        if (value === undefined) {
+            return this._req.headers[name];
+        } else {
+            if (value == null) delete this._res.headers[name];
+            else this._res.headers[name] = value;
         }
-    };
+    }
 
-    return ctx;
+    get address () {
+        if (this._address) return this._address;
+
+        let value = '';
+        let isV4 = true;
+    
+        let last = [];
+        for (let i = 0; i < buf.length; i++) {
+            const current = buf[i];
+            if (i < 10) {
+                if (current != 0) {
+                    isV4 = false;
+                }
+            } else if (i < 12) {
+                if (current != 0xFF) {
+                    isV4 = false;
+                }
+            } else if (isV4) {
+                if (i == 12) value = current.toString();
+                else value += '.' + current;
+            }
+            
+            if (i < 12 || !isV4) {
+                last.push(current);
+                if (i % 2 != 0) {
+                    if (last[0] == 0 && last[1] == 0) {
+                    } else {
+                        value += parseIPv6Part(last[0]);
+                        value += parseIPv6Part(last[1]);
+                    }
+    
+                    if (i != 15) value += ':';
+                    last = [];
+                }
+            }
+        }
+
+        const isProxied = isV4
+            // Loopback, docker and local subnets
+            ? (value.startsWith('127.') || value.startsWith('172.18.') || value.startsWith('192.168.') || value.startsWith('10.'))
+            // Loopback and Unique Local Address
+            : value == ':::::::0001' || value.startsWith('fd');
+        
+        let result;
+        if (isProxied) {
+            const realValue = this._req.headers['x-real-ip'];
+            if (realValue) {
+                result = {
+                    type: ~realValue.indexOf('.') ? 'ipv4' : 'ipv6',
+                    value: realValue
+                };
+            }
+        }
+
+        if (!result) {
+            result = {
+                type: isV4 ? 'ipv4' : 'ipv6',
+                value
+            };
+        }
+
+        this._address = result;
+        return result;
+    }
+
+    // TODO: no context without controller
+    get controller () {
+        return this._controllerProxy;
+    }
+    set controller (controller) {
+        this._controllerProxy = new Proxy(controller, {
+            get (obj, prop) {
+                if (typeof obj[prop] === 'function') return obj[prop].bind(ctx);
+                return obj[prop];
+            }
+        });
+    }
 }
 
 function getResponseStatus (code) {
@@ -98,45 +138,25 @@ function getResponseStatus (code) {
     }
 }
 
-module.exports = {
-    async getHTTP (req, res) {
-        const ctx = getBase(req, res);
-        ctx.type = 'http';
-        ctx.data = req.body;
+class ControllerHTTPContext extends ControllerBaseContext {
+    constructor (req, res) {
+        super(req, res);
 
-        ctx.send = (data, code = 200, isPure = false) => {
-            if (res.aborted) return;
-            res.aborted = true;
+        this.type = 'http';
+        this.data = req.body;
+    }
 
-            res.writeStatus(getResponseStatus(code));
-            for (const header in res.headers) res.writeHeader(header, res.headers[header]);
-
-            if (isPure) {
-                if (!res.headers['content-type']) {
-                    if (typeof data === 'string') res.writeHeader('Content-Type', 'text/plain');
-                    else if (data instanceof Buffer) res.writeHeader('Content-Type', 'application/octet-stream');
-                }
-                res.end(data);
-            } else {
-                res.writeHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify(data));
-            }
-        };
-
-        ctx.redirect = url => {
-            if (res.aborted) return;
-            res.writeStatus('302 Found');
-            res.writeHeader('Location', url);
-            res.end();
-        };
-
+    async init () {
+        // TODO: disable session for dummy requests
         if (Session.enabled) {
             try {
-                const session = await Session.parse(req.headers.session);
-                if (session.header) res.headers.session = session.header;
-                ctx.session = session.object;
+                const session = await Session.parse(this._req.headers.session);
+                if (session.header) {
+                    this._res.headers.session = session.header;
+                }
+
+                this.session = session.object;
             } catch (err) {
-                ctx.err = err;
                 core.emitError({
                     isSystem: true,
                     type: 'SessionError',
@@ -144,33 +164,66 @@ module.exports = {
                     message: err.message,
                     error: err
                 });
+
+                throw err;
             }
         }
+    }
 
-        return ctx;
-    },
+    send (data, code = 200, isPure = false) {
+        if (this._res.aborted) return;
+        this._res.aborted = true;
 
-    async getWS (ws, sessionHeader) {
+        this._res.writeStatus(getResponseStatus(code));
+        for (const header in this._res.headers) {
+            this._res.writeHeader(header, this._res.headers[header]);
+        }
+
+        if (isPure) {
+            if (!this._res.headers['content-type']) {
+                if (typeof data === 'string') {
+                    this._res.writeHeader('Content-Type', 'text/plain');
+                } else if (data instanceof Buffer) {
+                    this._res.writeHeader('Content-Type', 'application/octet-stream');
+                }
+            }
+
+            this._res.end(data);
+        } else {
+            this._res.writeHeader('Content-Type', 'application/json');
+            this._res.end(JSON.stringify(data));
+        }
+    }
+
+    redirect (url) {
+        if (this._res.aborted) return;
+        this._res.aborted = true;
+
+        this._res.writeStatus('302 Found');
+        this._res.writeHeader('Location', url);
+        this._res.end();
+    }
+}
+
+class ControllerWSContext extends ControllerBaseContext {
+    constructor (ws) {
         // `req` and `res` in `getBase` used only to get
         // request/response values, that combined in `ws`
-        const ctx = getBase(ws, ws);
-        ctx.type = 'ws';
+        super(ws, ws);
 
-        // emit(event, ...arguments);
-        ctx.emit = (...args) => {
-            if (ws.isClosed) return log.warn('Trying to send message via closed socket');
-            ws.send(JSON.stringify(args));
-        };
+        this.type = 'ws';
+    }
 
-        ctx.end = (msg = '', code = 1000) => ws.end(code, msg);
-
+    async init (sessionHeader) {
         if (Session.enabled) {
             try {
                 const session = await Session.parse(sessionHeader);
-                if (session.header) ctx.emit('session', session.header);
-                ctx.session = session.object;
+                if (session.header) {
+                    this.emit('session', session.header);
+                }
+
+                this.session = session.object;
             } catch (err) {
-                ctx.err = err;
                 core.emitError({
                     isSystem: true,
                     type: 'SessionError',
@@ -178,9 +231,27 @@ module.exports = {
                     message: err.message,
                     error: err
                 });
+
+                throw err;
             }
         }
-
-        return ctx;
     }
+
+    // emit(event, ...arguments);
+    emit (...args) {
+        if (this._req.isClosed) {
+            return log.warn('Trying to send message via closed socket');
+        }
+
+        this._res.send(JSON.stringify(args));
+    }
+
+    end (msg = '', code = 1000) {
+        this._res.end(code, msg);
+    }
+}
+
+module.exports = {
+    ControllerHTTPContext,
+    ControllerWSContext
 };

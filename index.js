@@ -33,6 +33,7 @@ exports.onError = handler => errorHandlers.push(handler);
 
 const ROOT = process.cwd();
 const fs = require('fs');
+const { ControllerHTTPContext } = require('./context');
 (async () => {
 	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
@@ -142,7 +143,7 @@ const fs = require('fs');
 			await onData;
 			await dispatch.http(req, res);
 		} catch (err) {
-			(await context.getHTTP(req, res)).send(...err);
+			new ControllerHTTPContext(req, res).send(...err);
 		}
 	});
 

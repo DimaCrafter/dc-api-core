@@ -1,9 +1,9 @@
 const ROOT = process.cwd();
 const core = require('.');
-const context = require('./context');
 const log = require('./log');
 const path = require('path');
 const fs = require('fs');
+const { ControllerWSContext, ControllerHTTPContext } = require('./context');
 
 function getController (name) {
     if (!name) throw [`API controller not specified`, 400];
@@ -111,8 +111,12 @@ const dispatch = {
             // Getting controller and action from path
             : req.path.split('/').slice(1);
 
-        const ctx = await context.getHTTP(req, res);
-        if (ctx.err) return ctx.send(ctx.err.toString(), 500);
+        const ctx = new ControllerHTTPContext(req, res);
+        try {
+            await ctx.init();
+        } catch (err) {
+            return ctx.send(err.toString(), 500);
+        }
 
         if (req._matchedRoute) {
             ctx.params = req._matchedRoute.params;
@@ -130,12 +134,15 @@ const dispatch = {
     async ws (ws) {
         let obj = {};
         const controller = 'Socket';
-        let ctx;
+        const ctx = new ControllerWSContext(ws);
 
         let initProgress;
         const init = async session => {
-            ctx = await context.getWS(ws, session);
-            if (ctx.err) return ctx.emit('error', ctx.err.toString(), 500);
+            try {
+                await ctx.init(session);
+            } catch (err) {
+                return ctx.emit('error', err.toString(), 500);
+            }
 
             try {
                 await load(controller, 'open', ctx, true);
