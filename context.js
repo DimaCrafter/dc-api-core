@@ -96,12 +96,18 @@ class ControllerBaseContext {
         return this._controllerProxy;
     }
     set controller (controller) {
-        this._controllerProxy = new Proxy(controller, {
-            get (obj, prop) {
-                if (typeof obj[prop] === 'function') return obj[prop].bind(ctx);
-                return obj[prop];
+        this._controllerProxy = {};
+        const { prototype } = controller.constructor;
+        for (const key of Object.getOwnPropertyNames(prototype)) {
+            if (key == 'constructor') continue;
+
+            const prop = prototype[key];
+            if (typeof prop == 'function') {
+                this._controllerProxy[key] = prop.bind(this);
+            } else {
+                this._controllerProxy[key] = controller[key] || prop;
             }
-        });
+        }
     }
 }
 

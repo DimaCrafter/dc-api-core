@@ -108,7 +108,6 @@ Options:
 | `port`                | `8081`              | API listing port                             |
 | `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds |
 |                       |                     |                                              |
-| `devMode`             | Deprecated          | Start with `--dev` argument for development  |
 | `ignore`              | `[]`                | Excluded directories in development mode     |
 | `isDev`               | Read-only           | `true` if using `--dev` argument             |
 | `dev`                 | `{}`                | Config to merge if `isDev` is `true`         |

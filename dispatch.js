@@ -124,7 +124,14 @@ const dispatch = {
         }
 
         try {
-            await load(target[0], target[1], ctx);
+            switch (typeof target) {
+                case 'function':
+                    //+todo: fix session undefined config prop
+                    target.call(ctx);
+                default:
+                    await load(target[0], target[1], ctx);
+                    break;
+            }
         } catch (err) {
             return catchError(ctx, err);
         }

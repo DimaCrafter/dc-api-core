@@ -34,7 +34,5 @@ class MyCoolDB extends EventEmitter {
     }
 }
 
-// register(pluginType, pluginClass, ...advanced)
-// advanced[0] - code of database driver
-module.exports = core => core.register('db', MyCoolDB, 'mycooldb');
+module.exports = core => core.db(MyCoolDB, 'mycooldb');
 ```

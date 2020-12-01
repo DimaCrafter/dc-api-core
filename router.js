@@ -7,7 +7,10 @@ module.exports = {
 			return '(.*?)';
 		});
 
-		target = target.split('.');
+		if (typeof target == 'string') {
+			target = target.split('.');
+		}
+
 		const route = { target };
 		if (params.length) {
 			route.pattern = new RegExp('^' + pattern + '$');
