@@ -1,9 +1,71 @@
 #!/usr/bin/env node
+const ROOT = process.cwd();
+const log = require('./log');
+if (process.argv[2] == 'init') {
+    const fs = require('fs');
+
+    if (!fs.existsSync(ROOT + '/package.json')) {
+        log.error('Package not initialized, run `npm init` or `yarn init` first');
+        process.exit();
+    }
+
+    if (!fs.existsSync(ROOT + '/controllers')) {
+        fs.mkdirSync(ROOT + '/controllers');
+    }
+
+    if (!fs.existsSync(ROOT + '/controllers/Info.js')) {
+        log.info('Creating example controller...');
+        fs.writeFileSync(ROOT + '/controllers/Info.js', `
+// Importing \`package.json\` from installed \`dc-api-core\` package
+const pkg = require('dc-api-core/package');
+
+// Importing value from configuration
+const { something_configurable } = require('dc-api-core/config');
+
+// Exporting controller's class
+module.exports = class Info {
+    // Declaring a handler method that will accept requests
+    // on URL http://localhost:8081/Info/status
+    status () {
+        // Sends an object with installed \`dc-api-core\` version
+        // and current server time in response
+        this.send({
+            version: pkg.version,
+            time: new Date().toLocaleString(),
+            something_configurable
+        });
+    }
+}
+        `.trim() + '\n');
+    }
+
+    if (!fs.existsSync(ROOT + '/config.json')) {
+        log.info('Creating example configuration file...');
+        fs.writeFileSync(ROOT + '/config.json', JSON.stringify({
+            port: 8081,
+            something_configurable: 'Configured in production',
+            dev: {
+                something_configurable: 'Configured in development'
+            }
+        }, null, 4));
+    }
+
+    log.info('Creating dc-api-core scripts...');
+    const pkg = JSON.parse(fs.readFileSync(ROOT + '/package.json'));
+
+    if (!pkg.scripts) pkg.scripts = {};
+    pkg.scripts.start = 'dc-api-core';
+    pkg.scripts.dev = 'dc-api-core --dev';
+
+    fs.writeFileSync(ROOT + '/package.json', JSON.stringify(pkg, null, 4));
+
+    log.text('\nNow you can run `npm run dev` or `yarn dev` to start development server');
+    log.text('and open http://localhost:8081/Info/status to see example controller output.');
+    process.exit();
+}
+
 const config = require('./config');
 if (config.isDev) {
-    const ROOT = process.cwd();
-    const log = require('./log');
-
     let core;
     let restarting = false;
     const { spawn } = require('child_process');

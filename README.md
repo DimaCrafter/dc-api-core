@@ -2,6 +2,15 @@
 
 [![NPM](https://nodei.co/npm/dc-api-core.png)](https://npmjs.com/package/dc-api-core)
 
+## Useful links
+
+> "Finally! Documentation" image
+
+* [Documentation](http://dimacrafter.github.io/dc-api-core)
+* [dc-api-client](https://github.com/DimaCrafter/dc-api-client) - official API client
+* [dc-api-mongo](https://github.com/DimaCrafter/dc-api-mongo) - Mongoose based MongoDB driver
+* [Examples](https://github.com/mayerdev/dc-api-examples)
+
 ## Dependencies
 
 * [jwa](https://github.com/auth0/node-jwa)
@@ -23,60 +32,30 @@
  └── ⏱ startup.js       Script, that was started before strting API server
 ```
 
-Information about [code styling are available here](docs/CodeStyling.md).
-
-[API Client you can find here](https://github.com/DimaCrafter/dc-api-client)
-
 ---
 
 ## Installation
+
 **0)** Run `npm init` or `yarn init`
 
 **1)** Install package - `npm i dc-api-core --save` or `yarn add dc-api-core`
 
-**2)** Add the following to `package.json`.
+**2)** Run `npm exec dc-api-core init` or `yarn dc-api-core init`
 
-for Linux end MacOS users
-```javascript
-"scripts": {
-  "start": "dc-api-core",
-  "dev": "dc-api-core --dev",
-  "init": "mkdir -p controllers && echo 'module.exports = class Index {}' > ./controllers/Index.js"
-}
-```
+**3)** Run `npm run dc-init` or `yarn dc-init`
 
-for Windows users
-```javascript
-"scripts": {
-  "start": "dc-api-core",
-  "dev": "dc-api-core --dev",
-  "dc-init": "mkdir controllers && echo module.exports = class Index {} > ./controllers/Index.js"
-}
-```
-**3)** Fill `config.json`
+**4)** Run `npm start` or `yarn start`
 
-e.g.
-```json
-{
-    "port": 80,
-    "dev": {
-        "port": 8081
-    }
-}
-```
-**4)** Run `npm run dc-init` or `yarn dc-init`
-
-**5)** Run `npm start` or `yarn start`
-
-**6)** Done!
+**5)** Done!
 
 ## CLI
 
-You can use `dc-api-core` command locally is `package.json` scripts.
+You can use `dc-api-core` command locally in `package.json` scripts.
 
 Options:
 
-* No options - Just running your project
+* No options - Just running your project.
+* `init` - Create example files and start scripts.
 * `--dev` - Running project in development mode.
 * `--cfg <path>` - Overrides `config.json` location. You can use both relative and absolute paths.
 
@@ -165,9 +144,11 @@ Example:
 const db = require('dc-api-core/DB').mongo();
 ```
 
-Where `mongo` - your database-driver name.
+Where `mongo` - your database driver name.
+
 Example:
-If you're using MySQL, use DBDriver - `mysql`
+If you're using MySQL, use `mysql` as database driver (don't forget to apply plugin first).
+
 ```js
 const db = require('dc-api-core/DB').mysql();
 ```
@@ -186,7 +167,8 @@ Example `config.json`:
 }
 ```
 
-If you want create your own plugin, read [plugin development documentation](docs/Plugins.md)
+If you want create your own plugin, read
+[plugin development documentation](https://dimacrafter.github.io/dc-api-core/en/plugins/basics.html)
 
 ---
 
@@ -194,13 +176,13 @@ If you want create your own plugin, read [plugin development documentation](docs
 
 ### Functions
 
-| Function                 | Example                      | Description            |
-|--------------------------|------------------------------|------------------------|
-| `this.session.<name>`    | `this.session.name = 'User'` | Set session data       |
-| `this.session.save()`    | `await this.session.save()`  | Save session data      |
-| `this.session.destroy()` | `this.session.destroy()`     | Clear all session data |
- 
-### Example
+| Function                 | Example                        | Description            |
+|--------------------------|--------------------------------|------------------------|
+| `this.session.<name>`    | `this.session.name = 'User'`   | Set session data       |
+| `this.session.save()`    | `await this.session.save()`    | Save session data      |
+| `this.session.destroy()` | `await this.session.destroy()` | Clear all session data |
+
+#### Example
 
 ```js
 module.exports = class Controller {
@@ -275,23 +257,15 @@ Now requests like `/testing/files/some-id/secret_file.jpg` will call `getFile` m
 class Test {
     async getFile () {
         this.send(this.params);
-        // Witll send { "id": "some-id", "file": "secret_file" }
+        // Will send { "id": "some-id", "file": "secret_file" }
     }
 }
 
 module.exports = Test;
 ```
 
-## Need more examples?
-
-More examples you can find in [mayerdev/dc-api-examples](https://github.com/mayerdev/dc-api-examples) repository.
-
 ## My TODOs
 
-* [ ] Support for kernel < 3.0
-* [ ] Support for serving SPA (useless?)
-* [ ] Typing (`.d.ts` files)
-* [ ] WebSocket fallback (like socket.io)
-* (WIP) [Normal documentation](https://dimacrafter.github.io/dc-api-core)
-* (WIP) Middlewares
-* (WIP) Local/remote (git) plugins and middlewares support
+* [ ] Support for glibc < 2.18
+* [ ] Typing (`.d.ts`) files
+* [ ] WebSocket fallback (long pooling like in Socket.IO)
