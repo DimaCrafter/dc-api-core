@@ -3,59 +3,73 @@ const config = require('./config');
 const log = require('./log');
 const Plugins = require('./plugins');
 
-const exported = {
-    ObjectIdFromTime (timestamp) {
-        if (typeof timestamp == 'string') timestamp = new Date(timestamp).getTime();
-        else if (timestamp instanceof Date) timestamp = timestamp.getTime();
+function connect (driverName, dbConfig, connectionName) {
+    const driver = new Plugins.types.db[driverName](dbConfig);
+    driver.on('connected', error => {
+        if (error) {
+            log.error(`Connection to ${connectionName} database was failed`, error);
+            core.emitError({
+                isSystem: true,
+                type: 'DatabaseConnectionError',
+                name: connectionName,
+                error
+            });
+        } else {
+            log.success(`Connected to ${connectionName} database`);
+        }
+    });
 
-        return (~~(timestamp / 1000)).toString(16) + '0000000000000000';
-    }
-};
+    const MODELS_BASE_PATH = process.cwd() + '/models/' + driverName;
+    return new Proxy(driver, {
+        get (driver, prop) {
+            if (prop in driver) {
+                return driver[prop];
+            }
+
+            // Here `prop` is model name
+            try {
+                return driver.getModel(MODELS_BASE_PATH, prop);
+            } catch (err) {
+                log.warn(`Database model ${prop} not found for ${dbConfig._name} configuration`);
+            }
+        }
+    });
+}
 
 let connections = {};
 module.exports = new Proxy(Plugins.types.db, {
     get (drivers, driverName) {
-        if (driverName in exported) return exported[driverName];
-
         if (driverName in drivers) {
-            return (confName, options) => {
-                if (options && !options.identifier && !options.name) return log.warn('Templated connection to database must have `identifier` field');
-                confName = driverName + (confName ? ('.' + confName) : '');
-                let connName = options ? (driverName + '.' + (options.identifier || options.name)) : confName;
+            return (configKey, options) => {
+                if (options && !options.identifier && !options.name) {
+                    return log.warn('Templated connection to database must have `identifier` field');
+                }
+
+                // Key of configuration in config.db object
+                configKey = driverName + (configKey ? ('.' + configKey) : '');
+
+                // Unique name of current connection (equals configKey when not templated)
+                const connectionName = options
+                    ? (driverName + '.' + (options.identifier || options.name))
+                    : configKey;
 
                 // Reusing connections
-                if (connName in connections) return connections[connName].driverProxy;
-                if (confName in config.db) {
-                    let cfg = config.db[confName];
+                if (connectionName in connections) {
+                    return connections[connectionName];
+                }
+
+                if (configKey in config.db) {
+                    let dbConfig = config.db[configKey];
                     if (options) {
-                        cfg = { ...cfg, ...options };
-                        delete cfg.identifier;
+                        // Spread is used to make mutable copy without side-effects
+                        dbConfig = { ...dbConfig, ...options };
+                        delete dbConfig.identifier;
                     }
 
-                    const driver = new drivers[driverName](cfg, confName);
-                    driver.cfg = cfg;
-                    driver.on('connected', err => {
-                        if (err) {
-                            log.error(`Connection to database failed (${connName})`, err);
-                            core.emitError({
-                                isSystem: true,
-                                type: 'DatabaseConnectionError',
-                                name: connName,
-                                error: err
-                            });
-                        } else {
-                            log.success(`Connected to database (${connName})`);
-                        }
-                    });
-                    driver.on('no-model', name => log.warn(`Database model ${confName}.${name} not found`));
-
-                    const driverProxy = new Proxy(driver, {
-                        get: (obj, prop) => (prop in obj) ? obj[prop] : obj.getModel(prop)
-                    });
-                    connections[connName] = { driver, driverProxy };
-                    return driverProxy;
+                    dbConfig._name = configKey;
+                    connections[connectionName] = connect(driverName, dbConfig, connectionName);
                 } else {
-                    log.error(`Database configuration ${confName} not found`);
+                    log.error(`Database configuration ${configKey} not found`);
                 }
             };
         } else {
