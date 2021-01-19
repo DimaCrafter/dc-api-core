@@ -177,7 +177,7 @@ const dispatch = {
         }
 
         obj.error = async (code, msg) => {
-            if (code != 1000 && code != 1001) {
+            if (code != 0 && code != 1000 && code != 1001) {
                 msg = Buffer.from(msg).toString();
                 try {
                     if (ctx) await load(controller, 'error', ctx, false, [code, msg]);

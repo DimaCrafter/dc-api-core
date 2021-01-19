@@ -19,7 +19,7 @@ function connect (driverName, dbConfig, connectionName) {
         }
     });
 
-    const MODELS_BASE_PATH = process.cwd() + '/models/' + driverName;
+    const MODELS_BASE_PATH = process.cwd() + '/models/' + dbConfig._name;
     return new Proxy(driver, {
         get (driver, prop) {
             if (prop in driver) {
@@ -67,7 +67,7 @@ module.exports = new Proxy(Plugins.types.db, {
                     }
 
                     dbConfig._name = configKey;
-                    connections[connectionName] = connect(driverName, dbConfig, connectionName);
+                    return connections[connectionName] = connect(driverName, dbConfig, connectionName);
                 } else {
                     log.error(`Database configuration ${configKey} not found`);
                 }

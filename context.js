@@ -28,10 +28,11 @@ class ControllerBaseContext {
 
     get address () {
         if (this._address) return this._address;
+        const buf = Buffer.from(this._res.getRemoteAddress());
 
         let value = '';
         let isV4 = true;
-    
+
         let last = [];
         for (let i = 0; i < buf.length; i++) {
             const current = buf[i];
@@ -47,7 +48,7 @@ class ControllerBaseContext {
                 if (i == 12) value = current.toString();
                 else value += '.' + current;
             }
-            
+
             if (i < 12 || !isV4) {
                 last.push(current);
                 if (i % 2 != 0) {
@@ -56,7 +57,7 @@ class ControllerBaseContext {
                         value += parseIPv6Part(last[0]);
                         value += parseIPv6Part(last[1]);
                     }
-    
+
                     if (i != 15) value += ':';
                     last = [];
                 }
@@ -68,7 +69,7 @@ class ControllerBaseContext {
             ? (value.startsWith('127.') || value.startsWith('172.18.') || value.startsWith('192.168.') || value.startsWith('10.'))
             // Loopback and Unique Local Address
             : value == ':::::::0001' || value.startsWith('fd');
-        
+
         let result;
         if (isProxied) {
             const realValue = this._req.headers['x-real-ip'];

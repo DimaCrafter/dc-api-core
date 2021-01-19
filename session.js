@@ -1,18 +1,17 @@
 const jwa = require('jwa')('HS256');
-const { ObjectIdFromTime } = require('./DB');
 const config = require('./config');
 
 let db;
 if (config.session) {
-    const cfg = config.session.store.split('.');
-    db = require('./DB')[cfg[0]](cfg[1]);
+    const dbConfigName = config.session.store.split('.');
+    db = require('./DB')[dbConfigName[0]](dbConfigName[1]);
 
-    const dbCfg = config.db[config.session.store];
-    if (dbCfg.nonStrict) dbCfg.nonStrict.push('Session')
-    else dbCfg.nonStrict = ['Session'];
+    const dbConfig = config.db[config.session.store];
+    if (dbConfig.nonStrict) dbConfig.nonStrict.push('Session')
+    else dbConfig.nonStrict = ['Session'];
 
     function cleanup () {
-        db.Session.deleteMany({ _id: { $lte: ObjectIdFromTime(Date.now() - config.session.ttl) } });
+        db.Session.deleteMany({ _id: { $lte: db.ObjectIdFromTime(Date.now() - config.session.ttl) } });
     }
 
     cleanup();
@@ -31,13 +30,15 @@ function decodeSession (input) {
     } catch (err) {
         return;
     }
-    
-    const sign = input.sign;
+
+    if (!input) return;
+
+    const { sign } = input;
     delete input.sign;
 
     if (!jwa.verify(input, sign, config.session.secret)) return;
-    if (input.expires <= Date.now()) return;
-    return input;
+    else if (input.expires <= Date.now()) return;
+    else return input;
 }
 
 function wrap (document) {
@@ -49,7 +50,7 @@ function wrap (document) {
             data[key] = document[key];
         }
 
-        return db.Session.updateOne({ _id: document._id }, data, cb);
+        return db.Session.replaceOne({ _id: document._id }, data, cb);
     }
 
     document.destroy = cb => {
@@ -71,10 +72,10 @@ module.exports = {
     },
     async parse (header) {
         if (!header) return await this.create();
-        
+
         const parsed = decodeSession(header);
         if (!parsed) return await this.create();
-        
+
         let session = await db.Session.findById(parsed._id).lean();
         if (!session) return await this.create();
 
