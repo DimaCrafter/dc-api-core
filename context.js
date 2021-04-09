@@ -254,7 +254,9 @@ class ControllerWSContext extends ControllerBaseContext {
     }
 
     end (msg = '', code = 1000) {
-        this._res.end(code, msg);
+        if (!this._req.isClosed) {
+            this._res.end(code, msg);
+        }
     }
 }
 

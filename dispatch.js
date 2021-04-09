@@ -177,7 +177,11 @@ const dispatch = {
         }
 
         obj.error = async (code, msg) => {
-            if (code != 0 && code != 1000 && code != 1001) {
+            // 0 - Clear close
+            // 1001 - Page closed
+            // 1006 & !message - Browser ended connection with no close frame.
+            //                   In most cases it means "normal" close when page reloaded or browser closed
+            if (code != 0 && code != 1000 && code != 1001 && (code != 1006 || msg)) {
                 msg = Buffer.from(msg).toString();
                 try {
                     if (ctx) await load(controller, 'error', ctx, false, [code, msg]);
