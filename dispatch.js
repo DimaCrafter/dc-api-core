@@ -47,7 +47,7 @@ async function load (controller, action, ctx, isOptional, args) {
 
     if (action in controller) {
         try {
-            return controller[action].apply(ctx, args);
+            return await controller[action].apply(ctx, args);
         } catch (err) {
             core.emitError({
                 isSystem: false,
@@ -124,16 +124,26 @@ const dispatch = {
         }
 
         try {
+            let result;
             switch (typeof target) {
                 case 'function':
                     //+todo: fix session undefined config prop
-                    target.call(ctx);
+                    result = await target.call(ctx);
                 default:
-                    await load(target[0], target[1], ctx);
+                    result = await load(target[0], target[1], ctx);
                     break;
             }
+
+            if (result !== undefined && !this._res.aborted) {
+                this.send(result);
+            }
         } catch (err) {
-            return catchError(ctx, err);
+            if (err instanceof core.HttpError) {
+                ctx.send(err.message, err.code);
+            } else {
+                ctx.send(err.toString(), 500);
+                return catchError(ctx, err);
+            }
         }
     },
 
