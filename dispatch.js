@@ -6,7 +6,7 @@ const fs = require('fs');
 const { ControllerWSContext, ControllerHTTPContext } = require('./context');
 
 function getController (name) {
-    if (!name) throw [`API controller not specified`, 400];
+    if (!name) throw new core.HttpError('API controller not specified', 400);
 
     name = name[0].toUpperCase() + name.slice(1);
     return new Promise((resolve, reject) => {
@@ -72,26 +72,26 @@ async function load (controller, action, ctx, isOptional, args) {
             throw err;
         }
     } else if (!isOptional) {
-        throw [`API ${controller.constructor.name}.${action} action not found`, 404];
+        throw new core.HttpError(`API ${controller.constructor.name}.${action} action not found`, 404);
     }
 }
 
 function catchError (ctx, err) {
-    if (err instanceof Array) {
+    if (err instanceof core.HttpError) {
         switch (ctx.type) {
             case 'http':
-                ctx.send(...err);
+                ctx.send(err.message, err.code);
                 break;
             case 'ws':
-                ctx.emit('error', ...err);
+                ctx.emit('error', err.message, err.code);
                 break;
         }
 
         core.emitError({
             isSystem: true,
             type: 'DispatchError',
-            code: err[1],
-            message: err[0]
+            ...err,
+            error: err
         });
     } else {
         switch (ctx.type) {
