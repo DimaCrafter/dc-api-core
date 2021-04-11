@@ -58,7 +58,7 @@ async function load (controller, action, ctx, isOptional, args) {
 
     if (action in controller) {
         try {
-            return controller[action].apply(ctx, args);
+            return await controller[action].apply(ctx, args);
         } catch (err) {
             core.emitError({
                 isSystem: false,
@@ -135,16 +135,26 @@ const dispatch = {
         }
 
         try {
+            let result;
             switch (typeof target) {
                 case 'function':
                     //+todo: fix session undefined config prop
-                    target.call(ctx);
+                    result = await target.call(ctx);
                 default:
-                    await load(target[0], target[1], ctx);
+                    result = await load(target[0], target[1], ctx);
                     break;
             }
+
+            if (result !== undefined && !this._res.aborted) {
+                this.send(result);
+            }
         } catch (err) {
-            return catchError(ctx, err);
+            if (err instanceof core.HttpError) {
+                ctx.send(err.message, err.code);
+            } else {
+                ctx.send(err.toString(), 500);
+                return catchError(ctx, err);
+            }
         }
     },
 
@@ -188,7 +198,11 @@ const dispatch = {
         }
 
         obj.error = async (code, msg) => {
-            if (code != 0 && code != 1000 && code != 1001) {
+            // 0 - Clear close
+            // 1001 - Page closed
+            // 1006 & !message - Browser ended connection with no close frame.
+            //                   In most cases it means "normal" close when page reloaded or browser closed
+            if (code != 0 && code != 1000 && code != 1001 && (code != 1006 || msg)) {
                 msg = Buffer.from(msg).toString();
                 try {
                     if (ctx) await load(controller, 'error', ctx, false, [code, msg]);

@@ -1,7 +1,6 @@
 const uWS = require('uWebSockets.js');
 require('./plugins').init();
 
-const context = require('./context');
 const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
@@ -28,6 +27,14 @@ function emitError (info) {
 	}
 }
 
+class HttpError {
+    constructor (message, code = 500) {
+        this.message = message;
+        this.code = code;
+    }
+}
+
+exports.HttpError = HttpError;
 exports.emitError = emitError;
 exports.onError = handler => errorHandlers.push(handler);
 
