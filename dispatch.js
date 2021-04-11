@@ -31,7 +31,18 @@ async function load (controller, action, ctx, isOptional, args) {
     ctx.controller = controller = await getController(controller);
 
     try {
-        if (controller.onLoad && controller.onLoad.apply(ctx)) return;
+        if (controller.onLoad) {
+            // Non-async result will be returned normally, async will be awaited
+            const onLoadResult = await controller.onLoad.call(ctx);
+            if (typeof onLoadResult != 'undefined') {
+                log.warn('Returning value from onLoad deprecated, use this.drop() instead');
+                return;
+            }
+
+            if (ctx._res.aborted) {
+                return;
+            }
+        }
     } catch (err) {
         core.emitError({
             isSystem: false,

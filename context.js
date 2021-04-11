@@ -202,6 +202,13 @@ class ControllerHTTPContext extends ControllerBaseContext {
         }
     }
 
+    drop () {
+        if (this._res.aborted) return;
+        this._res.aborted = true;
+        // Just ignoring request
+        // TODO: check efficiency
+    }
+
     redirect (url) {
         if (this._res.aborted) return;
         this._res.aborted = true;
