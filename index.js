@@ -6,7 +6,7 @@ const config = require('./config');
 const log = require('./log');
 const Router = require('./router');
 
-const multipart = require('./utils/multipart');
+const { getParts: parseMultipart } = require('uWebSockets.js');
 const parseRequest = require('./utils/request-parser');
 
 const app = (() => {
@@ -108,10 +108,19 @@ const { ControllerHTTPContext } = require('./context');
 							}
 							break;
 						case 'multipart/form-data':
-							req.body = multipart(contentType[1].slice(contentType[1].indexOf('boundary=') + 9), body);
+							req.body = {};
+							for (const part of parseMultipart(body, req.headers['content-type'])) {
+								req.body[part.name] = {
+									name: part.filename || part.name,
+									type: part.type,
+									content: Buffer.from(part.data)
+								};
+							}
+
 							if (req.body.json) {
+								const parsed = req.body.json.content.toString();
 								try {
-									Object.assign(req.body, JSON.parse(req.body.json.content.toString()));
+									Object.assign(req.body, JSON.parse(parsed));
 									delete req.body.json;
 								} catch (err) {
 									emitError({
@@ -121,7 +130,7 @@ const { ControllerHTTPContext } = require('./context');
 										url: req.path,
 										message: 'Wrong JSON data',
 										error: err,
-										body: req.body.json.content.toString()
+										body: parsed
 									});
 
 									return reject(['Wrong JSON data', 400]);
