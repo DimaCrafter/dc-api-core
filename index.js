@@ -4,10 +4,9 @@ require('./plugins').init();
 const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
-const Router = require('./router');
 
 const { getParts: parseMultipart } = require('uWebSockets.js');
-const parseRequest = require('./utils/request-parser');
+const { prepareHttpConnection, fetchBody, parseRequest, abortRequest } = require('./utils/http');
 
 const app = (() => {
 	if (config.ssl) {
@@ -40,7 +39,8 @@ exports.onError = handler => errorHandlers.push(handler);
 
 const ROOT = process.cwd();
 const fs = require('fs');
-const { ControllerHTTPContext } = require('./context');
+const { camelToKebab } = require('./utils/case-convert');
+const Router = require('./router');
 (async () => {
 	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
@@ -60,107 +60,72 @@ const { ControllerHTTPContext } = require('./context');
 		res.end();
 	});
 
-	// Dispatching requests
-	app.any('/*', async (res, req) => {
-		res.aborted = false;
-		res.onAborted(() => res.aborted = true);
-		req.path = req.getUrl();
-		req._matchedRoute = Router.match(req.path);
-		parseRequest(req, req);
-
-		res.headers = {};
-		res.headers['Access-Control-Allow-Origin'] = config.origin || req.getHeader('origin');
-		res.headers['Access-Control-Expose-Headers'] = 'session';
-
-		let body = Buffer.from('');
-		const onData = new Promise((resolve, reject) => {
-			res.onData((chunk, isLast) => {
-				body = Buffer.concat([body, Buffer.from(chunk)]);
-				if (isLast) {
-					if (body.length == 0) return resolve();
-					if (!req.headers['content-type']) return reject(['Content-Type header is required', 400]);
-					const contentType = req.headers['content-type'].split(';');
-					contentType[0] = contentType[0].toLowerCase();
-
-					switch (contentType[0]) {
-						case 'application/json':
-							try {
-								req.body = JSON.parse(body);
-							} catch (err) {
-								emitError({
-									isSystem: true,
-									type: 'RequestError',
-									code: 400,
-									url: req.path,
-									message: 'Wrong JSON data',
-									error: err,
-									body
-								});
-
-								return reject(['Wrong JSON data', 400]);
-							}
-							break;
-						case 'application/x-www-form-urlencoded':
-							req.body = {};
-							for (let line of body.toString().split('&')) {
-								line = line.split('=');
-								req.body[line[0]] = decodeURIComponent(line[1]);
-							}
-							break;
-						case 'multipart/form-data':
-							req.body = {};
-							for (const part of parseMultipart(body, req.headers['content-type'])) {
-								req.body[part.name] = {
-									name: part.filename || part.name,
-									type: part.type,
-									content: Buffer.from(part.data)
-								};
-							}
-
-							if (req.body.json) {
-								const parsed = req.body.json.content.toString();
-								try {
-									Object.assign(req.body, JSON.parse(parsed));
-									delete req.body.json;
-								} catch (err) {
-									emitError({
-										isSystem: true,
-										type: 'RequestError',
-										code: 400,
-										url: req.path,
-										message: 'Wrong JSON data',
-										error: err,
-										body: parsed
-									});
-
-									return reject(['Wrong JSON data', 400]);
-								}
-							}
-							break;
-						default:
-							emitError({
-								isSystem: true,
-								type: 'RequestError',
-								code: 400,
-								url: req.path,
-								message: 'Content-Type not supported',
-								value: contentType[0]
-							});
-
-							return reject(['Content-Type not supported', 400]);
-					}
-
-					resolve();
-				}
-			});
+	const test = (res, req) => {
+		const payload = Buffer.from('"API endpoint not found"');
+		res.cork(() => {
+			res.writeStatus('404 Not Found');
+			res.writeHeader('Content-Type', 'application/json');
+			res.end(payload);
 		});
+	};
 
-		try {
-			await onData;
-			await dispatch.http(req, res);
-		} catch (err) {
-			new ControllerHTTPContext(req, res).send(...err);
+	// Preloading controllers
+	for (let controllerName of fs.readdirSync(ROOT + '/controllers')) {
+		if (controllerName.endsWith('.js')) {
+			const ControllerClass = require(ROOT + '/controllers/' + controllerName);
+			const controller = new ControllerClass();
+			controllerName = controllerName.slice(0, -3);
+
+			for (const action of Object.getOwnPropertyNames(ControllerClass.prototype)) {
+				if (action[0] == '_' || action == 'onLoad' || action == 'constructor') {
+					continue;
+				}
+
+				// ? Is case convertation needed for action?
+				const routePath = `/${camelToKebab(controllerName)}/${action}`;
+				const actionFn = controller[action];
+
+				// TODO: get request method through vanilla decorators
+				app.get(routePath, async (res, req) => {
+					prepareHttpConnection(req, res);
+					if (res.aborted) return;
+
+					await dispatch.staticCall(req, res, controller, actionFn);
+				});
+
+				app.post(routePath, async (res, req) => {
+					prepareHttpConnection(req, res);
+					await fetchBody(req, res);
+					if (res.aborted) return;
+
+					await dispatch.http(req, res, async ctx => {
+						if (controller.onLoad) {
+							await controller.onLoad.call(ctx);
+							if (res.aborted) return;
+						}
+
+						return await actionFn.call(ctx);
+					});
+				});
+			}
 		}
+	}
+
+	// TODO: do smth with custom routes
+	app.any('/*', async (res, req) => {
+		prepareHttpConnection(req, res);
+		const route = Router.match(req.path);
+		if (!route) {
+			return abortRequest(res, 404, 'API endpoint not found');
+		}
+
+		if (req.getMethod() == 'post') await fetchBody(req, res);
+		if (res.aborted) return;
+
+		await dispatch.http(req, res, async ctx => {
+			ctx.params = route.params;
+			route.target.call();
+		});
 	});
 
 	// Handling web sockets

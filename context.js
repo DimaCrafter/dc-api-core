@@ -1,6 +1,7 @@
 const core = require('.');
 const log = require('./log');
 const Session = require('./session');
+const { getResponseStatus } = require('./utils/http');
 
 function parseIPv6Part (part) {
     let result = part.toString(16);
@@ -10,7 +11,9 @@ function parseIPv6Part (part) {
 
 class ControllerBaseContext {
     constructor (req, res) {
+        /** @type {import('uWebSockets.js').HttpRequest} */
         this._req = req;
+        /** @type {import('uWebSockets.js').HttpResponse} */
         this._res = res;
 
         this.query = req.query;
@@ -112,39 +115,6 @@ class ControllerBaseContext {
     }
 }
 
-function getResponseStatus (code) {
-    switch (code) {
-        case 200: return '200 OK';
-        case 201: return '201 Created';
-        case 202: return '202 Accepted';
-        case 203: return '203 Non-Authoritative Information';
-        case 204: return '204 No Content';
-        case 205: return '205 Reset Content';
-        case 206: return '206 Partial Content';
-
-        case 301: return '301 Moved Permanently';
-        case 302: return '302 Found';
-        case 303: return '303 See Other';
-        case 304: return '304 Not Modified';
-        case 307: return '307 Temporary Redirect';
-
-        case 400: return '400 Bad Request';
-        case 401: return '401 Unauthorized';
-        case 403: return '403 Forbidden';
-        case 404: return '404 Not Found';
-        case 405: return '405 Method Not Allowed';
-        case 406: return '406 Not Acceptable';
-        case 408: return '408 Request Timeout';
-        case 409: return '409 Conflict';
-        case 410: return '410 Gone';
-        case 415: return '415 Unsupported Media Type';
-
-        case 500: return '500 Internal Server Error';
-        case 501: return '501 Not Implemented';
-        default: return code.toString();
-    }
-}
-
 class ControllerHTTPContext extends ControllerBaseContext {
     constructor (req, res) {
         super(req, res);
@@ -181,25 +151,27 @@ class ControllerHTTPContext extends ControllerBaseContext {
         if (this._res.aborted) return;
         this._res.aborted = true;
 
-        this._res.writeStatus(getResponseStatus(code));
-        for (const header in this._res.headers) {
-            this._res.writeHeader(header, this._res.headers[header]);
-        }
-
-        if (isPure) {
-            if (!this._res.headers['content-type']) {
-                if (typeof data === 'string') {
-                    this._res.writeHeader('Content-Type', 'text/plain');
-                } else if (data instanceof Buffer) {
-                    this._res.writeHeader('Content-Type', 'application/octet-stream');
-                }
+        this._res.cork(() => {
+            this._res.writeStatus(getResponseStatus(code));
+            for (const header in this._res.headers) {
+                this._res.writeHeader(header, this._res.headers[header]);
             }
 
-            this._res.end(data);
-        } else {
-            this._res.writeHeader('Content-Type', 'application/json');
-            this._res.end(JSON.stringify(data));
-        }
+            if (isPure) {
+                if (!this._res.headers['content-type']) {
+                    if (typeof data === 'string') {
+                        this._res.writeHeader('Content-Type', 'text/plain');
+                    } else if (data instanceof Buffer) {
+                        this._res.writeHeader('Content-Type', 'application/octet-stream');
+                    }
+                }
+
+                this._res.end(data);
+            } else {
+                this._res.writeHeader('Content-Type', 'application/json');
+                this._res.end(JSON.stringify(data));
+            }
+        });
     }
 
     drop () {

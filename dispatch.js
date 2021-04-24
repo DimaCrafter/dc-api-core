@@ -3,6 +3,8 @@ const core = require('.');
 const log = require('./log');
 const path = require('path');
 const fs = require('fs');
+
+const Router = require('./router');
 const { ControllerWSContext, ControllerHTTPContext } = require('./context');
 
 function getController (name) {
@@ -76,6 +78,7 @@ async function load (controller, action, ctx, isOptional, args) {
     }
 }
 
+// TODO: better error reporting
 function catchError (ctx, err) {
     if (err instanceof core.HttpError) {
         switch (ctx.type) {
@@ -115,38 +118,19 @@ function catchError (ctx, err) {
 }
 
 const dispatch = {
-    async http (req, res) {
-        const target = req._matchedRoute
-            // Using target predefined for this route
-            ? req._matchedRoute.target
-            // Getting controller and action from path
-            : req.path.split('/').slice(1);
-
+    async http (req, res, handler) {
         const ctx = new ControllerHTTPContext(req, res);
         try {
+            // TODO: check if session is required for this call through vanilla decorators
             await ctx.init();
         } catch (err) {
             return ctx.send(err.toString(), 500);
         }
 
-        if (req._matchedRoute) {
-            ctx.params = req._matchedRoute.params;
-            delete req._matchedRoute;
-        }
-
         try {
-            let result;
-            switch (typeof target) {
-                case 'function':
-                    //+todo: fix session undefined config prop
-                    result = await target.call(ctx);
-                default:
-                    result = await load(target[0], target[1], ctx);
-                    break;
-            }
-
-            if (result !== undefined && !this._res.aborted) {
-                this.send(result);
+            const result = await handler(ctx);
+            if (!res.aborted && result !== undefined) {
+                ctx.send(result);
             }
         } catch (err) {
             if (err instanceof core.HttpError) {
