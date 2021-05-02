@@ -1,3 +1,5 @@
+const { getController, getActionCaller } = require("./utils/loader");
+
 module.exports = {
 	routes: [],
 	register (pattern, target) {
@@ -9,6 +11,8 @@ module.exports = {
 
 		if (typeof target == 'string') {
 			target = target.split('.');
+			const controller = getController(target[0]);
+			target = getActionCaller(controller, controller[target[1]]);
 		}
 
 		const route = { target };

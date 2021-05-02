@@ -5,9 +5,7 @@ const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
 
-const { getParts: parseMultipart } = require('uWebSockets.js');
 const { prepareHttpConnection, fetchBody, parseRequest, abortRequest } = require('./utils/http');
-
 const app = (() => {
 	if (config.ssl) {
 		const opts = { ...config.ssl };
@@ -41,6 +39,7 @@ const ROOT = process.cwd();
 const fs = require('fs');
 const { camelToKebab } = require('./utils/case-convert');
 const Router = require('./router');
+const { getActionCaller, getController } = require('./utils/loader');
 (async () => {
 	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
@@ -60,53 +59,35 @@ const Router = require('./router');
 		res.end();
 	});
 
-	const test = (res, req) => {
-		const payload = Buffer.from('"API endpoint not found"');
-		res.cork(() => {
-			res.writeStatus('404 Not Found');
-			res.writeHeader('Content-Type', 'application/json');
-			res.end(payload);
-		});
-	};
-
 	// Preloading controllers
 	for (let controllerName of fs.readdirSync(ROOT + '/controllers')) {
 		if (controllerName.endsWith('.js')) {
-			const ControllerClass = require(ROOT + '/controllers/' + controllerName);
-			const controller = new ControllerClass();
 			controllerName = controllerName.slice(0, -3);
+			const controller = getController(controllerName);
 
-			for (const action of Object.getOwnPropertyNames(ControllerClass.prototype)) {
+			for (const action of Object.getOwnPropertyNames(controller.__proto__)) {
 				if (action[0] == '_' || action == 'onLoad' || action == 'constructor') {
 					continue;
 				}
 
-				// ? Is case convertation needed for action?
-				const routePath = `/${camelToKebab(controllerName)}/${action}`;
-				const actionFn = controller[action];
+				const handler = getActionCaller(controller, controller[action]);
+				const requestHandler = async (res, req) => {
+					prepareHttpConnection(req, res);
+					if (res.aborted) return;
 
+					await dispatch.http(req, res, handler);
+				};
+
+				const routePath = `/${camelToKebab(controllerName)}/${camelToKebab(action)}`;
 				// TODO: get request method through vanilla decorators
-				app.get(routePath, async (res, req) => {
-					prepareHttpConnection(req, res);
-					if (res.aborted) return;
+				app.get(routePath, requestHandler);
+				app.post(routePath, requestHandler);
 
-					await dispatch.staticCall(req, res, controller, actionFn);
-				});
-
-				app.post(routePath, async (res, req) => {
-					prepareHttpConnection(req, res);
-					await fetchBody(req, res);
-					if (res.aborted) return;
-
-					await dispatch.http(req, res, async ctx => {
-						if (controller.onLoad) {
-							await controller.onLoad.call(ctx);
-							if (res.aborted) return;
-						}
-
-						return await actionFn.call(ctx);
-					});
-				});
+				if (config.supportOldCase) {
+					const routePath = `/${controllerName}/${action}`;
+					app.get(routePath, requestHandler);
+					app.post(routePath, requestHandler);
+				}
 			}
 		}
 	}
@@ -122,9 +103,9 @@ const Router = require('./router');
 		if (req.getMethod() == 'post') await fetchBody(req, res);
 		if (res.aborted) return;
 
-		await dispatch.http(req, res, async ctx => {
+		await dispatch.http(req, res, ctx => {
 			ctx.params = route.params;
-			route.target.call();
+			return route.target(ctx);
 		});
 	});
 

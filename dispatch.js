@@ -4,7 +4,6 @@ const log = require('./log');
 const path = require('path');
 const fs = require('fs');
 
-const Router = require('./router');
 const { ControllerWSContext, ControllerHTTPContext } = require('./context');
 
 function getController (name) {

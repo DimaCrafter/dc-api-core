@@ -4,10 +4,11 @@
 
 ## Useful links
 
-> "Finally! Documentation" image
+![Documentation image](https://user-images.githubusercontent.com/10772852/116776513-d4a0ba00-aa79-11eb-99c5-a42592b0bd2d.png)
 
 * [Documentation](http://dimacrafter.github.io/dc-api-core)
-* [dc-api-client](https://github.com/DimaCrafter/dc-api-client) - official API client
+* [dc-api-cli](https://github.com/DimaCrafter/dc-api-cli) - CLI toolkit
+* [dc-api-client](https://github.com/DimaCrafter/dc-api-client) - API client
 * [dc-api-mongo](https://github.com/DimaCrafter/dc-api-mongo) - Mongoose based MongoDB driver
 * [Examples](https://github.com/mayerdev/dc-api-examples)
 
@@ -268,4 +269,4 @@ module.exports = Test;
 
 * [ ] Support for glibc < 2.18
 * [ ] Typing (`.d.ts`) files
-* [ ] WebSocket fallback (long pooling like in Socket.IO)
+* [ ] Automatical package publication when all tests are passed

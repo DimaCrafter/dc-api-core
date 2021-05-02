@@ -3,6 +3,9 @@ const log = require('./log');
 const Session = require('./session');
 const { getResponseStatus } = require('./utils/http');
 
+/**
+ * @param {number} part
+ */
 function parseIPv6Part (part) {
     let result = part.toString(16);
     if (result[1]) return result;
@@ -10,15 +13,29 @@ function parseIPv6Part (part) {
 }
 
 class ControllerBaseContext {
+    /**
+     * @param {import("uWebSockets.js").HttpRequest} req
+     * @param {import("uWebSockets.js").HttpResponse} res
+     */
     constructor (req, res) {
-        /** @type {import('uWebSockets.js').HttpRequest} */
+        /**
+         * @type {import('uWebSockets.js').HttpRequest}
+         * @private
+         */
         this._req = req;
-        /** @type {import('uWebSockets.js').HttpResponse} */
+        /**
+         * @type {import('uWebSockets.js').HttpResponse}
+         * @private
+         */
         this._res = res;
 
         this.query = req.query;
     }
 
+    /**
+     * @param {string} name
+     * @param {any} value
+     */
     header (name, value) {
         name = name.toLowerCase();
         if (value === undefined) {
@@ -91,6 +108,7 @@ class ControllerBaseContext {
             };
         }
 
+        /** @private */
         this._address = result;
         return result;
     }
@@ -100,6 +118,7 @@ class ControllerBaseContext {
         return this._controllerProxy;
     }
     set controller (controller) {
+        /** @private */
         this._controllerProxy = {};
         const { prototype } = controller.constructor;
         for (const key of Object.getOwnPropertyNames(prototype)) {
@@ -116,6 +135,10 @@ class ControllerBaseContext {
 }
 
 class ControllerHTTPContext extends ControllerBaseContext {
+    /**
+     * @param {{ body: any; }} req
+     * @param {any} res
+     */
     constructor (req, res) {
         super(req, res);
 
@@ -147,6 +170,11 @@ class ControllerHTTPContext extends ControllerBaseContext {
         }
     }
 
+    /**
+     * @param {any} data Data to send
+     * @param {number} code HTTP response code, by default `200`
+     * @param {boolean} isPure Data will be sended without any transformations when `true`, by default `false`
+     */
     send (data, code = 200, isPure = false) {
         if (this._res.aborted) return;
         this._res.aborted = true;
@@ -181,6 +209,9 @@ class ControllerHTTPContext extends ControllerBaseContext {
         // TODO: check efficiency
     }
 
+    /**
+     * @param {import("uWebSockets.js").RecognizedString} url
+     */
     redirect (url) {
         if (this._res.aborted) return;
         this._res.aborted = true;
@@ -192,6 +223,9 @@ class ControllerHTTPContext extends ControllerBaseContext {
 }
 
 class ControllerWSContext extends ControllerBaseContext {
+    /**
+     * @param {any} ws
+     */
     constructor (ws) {
         // `req` and `res` in `getBase` used only to get
         // request/response values, that combined in `ws`
@@ -200,6 +234,9 @@ class ControllerWSContext extends ControllerBaseContext {
         this.type = 'ws';
     }
 
+    /**
+     * @param {any} sessionHeader
+     */
     async init (sessionHeader) {
         if (Session.enabled) {
             try {
@@ -224,6 +261,9 @@ class ControllerWSContext extends ControllerBaseContext {
     }
 
     // emit(event, ...arguments);
+    /**
+     * @param {(string | number)[]} args
+     */
     emit (...args) {
         if (this._req.isClosed) {
             return log.warn('Trying to send message via closed socket');
