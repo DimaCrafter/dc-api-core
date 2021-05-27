@@ -222,6 +222,7 @@ class ControllerHTTPContext extends ControllerBaseContext {
     }
 }
 
+let connected = [];
 class ControllerWSContext extends ControllerBaseContext {
     /**
      * @param {any} ws
@@ -232,6 +233,11 @@ class ControllerWSContext extends ControllerBaseContext {
         super(ws, ws);
 
         this.type = 'ws';
+    }
+
+    _destroy () {
+        const i = connected.indexOf(this);
+        if (~i) connected.splice(i, 1);
     }
 
     /**
@@ -258,6 +264,9 @@ class ControllerWSContext extends ControllerBaseContext {
                 throw err;
             }
         }
+
+        connected.push(this);
+        this._channels = new Set();
     }
 
     // emit(event, ...arguments);
@@ -270,6 +279,21 @@ class ControllerWSContext extends ControllerBaseContext {
         }
 
         this._res.send(JSON.stringify(args));
+    }
+
+    subscribe (channel) { this._channels.add(channel); }
+    unsubscribe (channel) {
+        if (channel) this._channels.delete(channel);
+        else this._channels.clear();
+    }
+
+    broadcast (channel, ...args) {
+        const payload = JSON.stringify(args);
+        for (const ctx of connected) {
+            if (!channel || ctx._channel == channel) {
+                ctx._req.send(payload);
+            }
+        }
     }
 
     end (msg = '', code = 1000) {

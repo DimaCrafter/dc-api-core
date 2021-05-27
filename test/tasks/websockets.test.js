@@ -22,6 +22,11 @@ test('Simple event', () => {
 	return testEvent('sum', 12);
 });
 
+test('Channel subscription', () => {
+	connection.send('["sub_test"]');
+	return testEvent('sub_test', 'Channeling works!');
+});
+
 afterAll(() => {
 	connection.close();
 });

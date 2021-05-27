@@ -6,4 +6,9 @@ module.exports = class Socket {
 	sum (...args) {
 		this.emit('sum', args.reduce((prev, curr) => prev + curr));
 	}
+
+	sub_test () {
+		this.subscribe('test-channel');
+		setTimeout(() => this.broadcast('test-channel', 'sub_test', 'Channeling works!'), 1000);
+	}
 }

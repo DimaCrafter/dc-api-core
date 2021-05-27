@@ -138,6 +138,7 @@ const dispatch = {
 
             if (ctx) {
                 if (controller.close) controller.close.call(ctx);
+                ctx._destroy();
             }
         }
 
