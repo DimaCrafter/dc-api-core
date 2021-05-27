@@ -1,5 +1,6 @@
 const jwa = require('jwa')('HS256');
 const config = require('./config');
+const log = require('./log');
 
 let db;
 if (config.session) {

@@ -1,11 +1,9 @@
 const uWS = require('uWebSockets.js');
 require('./plugins').init();
 
-const dispatch = require('./dispatch');
 const config = require('./config');
 const log = require('./log');
 
-const { prepareHttpConnection, fetchBody, parseRequest, abortRequest } = require('./utils/http');
 const app = (() => {
 	if (config.ssl) {
 		const opts = { ...config.ssl };
@@ -40,6 +38,9 @@ const fs = require('fs');
 const { camelToKebab } = require('./utils/case-convert');
 const Router = require('./router');
 const { getActionCaller, getController } = require('./utils/loader');
+const { prepareHttpConnection, fetchBody, parseRequest, abortRequest } = require('./utils/http');
+const dispatch = require('./dispatch');
+
 (async () => {
 	// Waiting startup.js
 	if (fs.existsSync(ROOT + '/startup.js')) {
@@ -75,6 +76,7 @@ const { getActionCaller, getController } = require('./utils/loader');
 					prepareHttpConnection(req, res);
 					if (res.aborted) return;
 
+					if (req.getMethod() == 'post') await fetchBody(req, res);
 					await dispatch.http(req, res, handler);
 				};
 

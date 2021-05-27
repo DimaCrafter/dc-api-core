@@ -1,4 +1,5 @@
 const config = require('../config');
+const { emitError } = require('..');
 const { parseQueryString, parseMultipart } = require('./parsers');
 
 /**
@@ -34,11 +35,16 @@ async function fetchBody (req, res) {
 		return abortRequest(res, 400, 'Content-Type header is required');
 	}
 
-	contentType = contentType.slice(0, contentType.indexOf(';')).toLowerCase();
+	const delimIndex = contentType.indexOf(';');
+	if (~delimIndex) contentType = contentType.slice(0, contentType.indexOf(';'));
+	contentType = contentType.toLowerCase();
+
+	const body = await getBody(res)
 	switch (contentType) {
 		case 'application/json':
 			try {
-				req.body = JSON.parse(await getBody(res));
+				// @ts-ignore
+				req.body = JSON.parse(body);
 			} catch (error) {
 				emitError({
 					isSystem: true,
@@ -54,12 +60,12 @@ async function fetchBody (req, res) {
 			}
 			break;
 		case 'application/x-www-form-urlencoded':
-			req.body = parseQueryString((await getBody(res)).toString());
+			req.body = parseQueryString(body.toString());
 			break;
 		case 'multipart/form-data':
 			try {
 				// Only JSON error can be thrown from this parser
-				req.body = parseMultipart(await getBody(res), req.headers['content-type']);
+				req.body = parseMultipart(body, req.headers['content-type']);
 			} catch (error) {
 				emitError({
 					isSystem: true,
