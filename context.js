@@ -1,6 +1,7 @@
 const core = require('.');
 const log = require('./log');
 const Session = require('./session');
+const CORS = require('./utils/cors');
 const { getResponseStatus } = require('./utils/http');
 
 /**
@@ -181,6 +182,7 @@ class ControllerHTTPContext extends ControllerBaseContext {
 
         this._res.cork(() => {
             this._res.writeStatus(getResponseStatus(code));
+            CORS.normal(this._req, this._res);
             for (const header in this._res.headers) {
                 this._res.writeHeader(header, this._res.headers[header]);
             }

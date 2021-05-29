@@ -40,6 +40,7 @@ const Router = require('./router');
 const { getActionCaller, getController } = require('./utils/loader');
 const { prepareHttpConnection, fetchBody, parseRequest, abortRequest } = require('./utils/http');
 const dispatch = require('./dispatch');
+const CORS = require('./utils/cors');
 
 (async () => {
 	// Waiting startup.js
@@ -52,10 +53,7 @@ const dispatch = require('./dispatch');
 
 	// CORS preflight request
 	app.options('/*', (res, req) => {
-		res.writeHeader('Access-Control-Allow-Methods', 'GET, POST');
-		res.writeHeader('Access-Control-Allow-Headers', 'content-type, session');
-		res.writeHeader('Access-Control-Max-Age', '86400');
-		res.writeHeader('Access-Control-Allow-Origin', config.origin || req.getHeader('origin'));
+		CORS.preflight(req, res);
 		res.writeStatus('200 OK');
 		res.end();
 	});

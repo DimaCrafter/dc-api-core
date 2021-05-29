@@ -1,6 +1,6 @@
-const config = require('../config');
 const { emitError } = require('..');
 const { parseQueryString, parseMultipart } = require('./parsers');
+const CORS = require('./cors');
 
 /**
  * Parses `req` data and makes it stored in `out`
@@ -25,8 +25,6 @@ function prepareHttpConnection (req, res) {
 	parseRequest(req, req);
 
 	res.headers = {};
-	res.headers['Access-Control-Allow-Origin'] = config.origin || req.headers.origin;
-	res.headers['Access-Control-Expose-Headers'] = 'session';
 }
 
 async function fetchBody (req, res) {
@@ -99,6 +97,7 @@ function abortRequest (res, code, message) {
 	res.cork(() => {
 		res.writeStatus(getResponseStatus(code));
 		res.writeHeader('Content-Type', 'application/json');
+		CORS.normal(null, res);
 		res.end('"' + message + '"');
 	});
 
