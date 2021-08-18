@@ -2,6 +2,10 @@ const ROOT = process.cwd();
 let controllers = {};
 
 module.exports = {
+	/**
+	 * @param {string} name Controller name without extension
+	 * @returns {object} Cached controller instance
+	 */
 	getController (name) {
 		if (controllers && name in controllers) {
 			return controllers[name];

@@ -70,9 +70,11 @@ const dispatch = {
     },
 
     WS_SYSTEM_EVENTS: ['open', 'close', 'error'],
-    async ws (ws) {
+    /**
+     * @param {import('./websocket').SocketController} controller
+     */
+    async ws (ws, controller) {
         let obj = {};
-        const controller = getController('Socket');
         const ctx = new ControllerWSContext(ws);
 
         let initProgress;

@@ -38,9 +38,10 @@ const fs = require('fs');
 const { camelToKebab } = require('./utils/case-convert');
 const Router = require('./router');
 const { getActionCaller, getController } = require('./utils/loader');
-const { prepareHttpConnection, fetchBody, parseRequest, abortRequest } = require('./utils/http');
+const { prepareHttpConnection, fetchBody, abortRequest } = require('./utils/http');
 const dispatch = require('./dispatch');
 const CORS = require('./utils/cors');
+const { SocketController, registerSocketController } = require('./websocket');
 
 (async () => {
 	// Waiting startup.js
@@ -63,6 +64,10 @@ const CORS = require('./utils/cors');
 		if (controllerName.endsWith('.js')) {
 			controllerName = controllerName.slice(0, -3);
 			const controller = getController(controllerName);
+			if (controller instanceof SocketController) {
+				registerSocketController(app, '/' + camelToKebab(controllerName), controller);
+				continue;
+			}
 
 			for (const action of Object.getOwnPropertyNames(controller.__proto__)) {
 				if (action[0] == '_' || action == 'onLoad' || action == 'constructor') {
@@ -109,35 +114,14 @@ const CORS = require('./utils/cors');
 		});
 	});
 
-	// Handling web sockets
-	app.ws('/socket', {
-		maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
-		idleTimeout: config.ttl || 0,
-		upgrade (res, req, context) {
-			const ws = { isClosed: false };
-			parseRequest(req, ws);
-
-			res.upgrade(
-				ws,
-				ws.headers['sec-websocket-key'],
-				ws.headers['sec-websocket-protocol'],
-				ws.headers['sec-websocket-extensions'],
-				context
-			);
-		},
-		async open (ws) {
-			try {
-				ws.dispatch = await dispatch.ws(ws);
-			} catch (err) {
-				log.error('WebSocket request dispatch error', err);
-			}
-		},
-		message (ws, msg, isBinary) { ws.dispatch.message(msg); },
-		close (ws, code, msg) {
-			ws.isClosed = true;
-			ws.dispatch.error(code, msg);
+	// Backward compatibility for Socket controller, will be removed soon
+	try {
+		const controller = getController('Socket');
+		if (!(controller instanceof SocketController)) {
+			registerSocketController(app, '/socket', controller);
+			log.warn('Deprecated usage of `Socket` controller without extending `SocketController`');
 		}
-	});
+	} catch {}
 
 	// Listening port
 	app.listen(config.port, socket => {
