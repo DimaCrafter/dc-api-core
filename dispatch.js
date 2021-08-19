@@ -1,8 +1,8 @@
 const core = require('.');
 const log = require('./log');
 
-const { ControllerWSContext, ControllerHTTPContext } = require('./context');
-const { getController } = require('./utils/loader');
+const { HTTPControllerContext } = require('./contexts/http');
+const { SocketControllerContext } = require('./contexts/websocket');
 const Session = require('./session');
 
 // TODO: better error reporting
@@ -46,7 +46,7 @@ function catchError (ctx, err) {
 
 const dispatch = {
     async http (req, res, handler) {
-        const ctx = new ControllerHTTPContext(req, res);
+        const ctx = new HTTPControllerContext(req, res);
         try {
             // TODO: check if session is required for this call through vanilla decorators
             await ctx.init();
@@ -71,11 +71,11 @@ const dispatch = {
 
     WS_SYSTEM_EVENTS: ['open', 'close', 'error'],
     /**
-     * @param {import('./websocket').SocketController} controller
+     * @param {import('./contexts/websocket').SocketController} controller
      */
     async ws (ws, controller) {
         let obj = {};
-        const ctx = new ControllerWSContext(ws);
+        const ctx = new SocketControllerContext(ws);
 
         let initProgress;
         const init = async session => {

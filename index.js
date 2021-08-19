@@ -37,11 +37,15 @@ const ROOT = process.cwd();
 const fs = require('fs');
 const { camelToKebab } = require('./utils/case-convert');
 const Router = require('./router');
-const { getActionCaller, getController } = require('./utils/loader');
+const { getController } = require('./utils/loader');
 const { prepareHttpConnection, fetchBody, abortRequest } = require('./utils/http');
 const dispatch = require('./dispatch');
 const CORS = require('./utils/cors');
-const { SocketController, registerSocketController } = require('./websocket');
+
+const { SocketController, registerSocketController } = require('./contexts/websocket');
+exports.SocketController = SocketController;
+const { HTTPController, registerHTTPController } = require('./contexts/http');
+exports.HTTPController = HTTPController;
 
 (async () => {
 	// Waiting startup.js
@@ -64,35 +68,11 @@ const { SocketController, registerSocketController } = require('./websocket');
 		if (controllerName.endsWith('.js')) {
 			controllerName = controllerName.slice(0, -3);
 			const controller = getController(controllerName);
+
 			if (controller instanceof SocketController) {
 				registerSocketController(app, '/' + camelToKebab(controllerName), controller);
-				continue;
-			}
-
-			for (const action of Object.getOwnPropertyNames(controller.__proto__)) {
-				if (action[0] == '_' || action == 'onLoad' || action == 'constructor') {
-					continue;
-				}
-
-				const handler = getActionCaller(controller, controller[action]);
-				const requestHandler = async (res, req) => {
-					prepareHttpConnection(req, res);
-					if (res.aborted) return;
-
-					if (req.getMethod() == 'post') await fetchBody(req, res);
-					await dispatch.http(req, res, handler);
-				};
-
-				const routePath = `/${camelToKebab(controllerName)}/${camelToKebab(action)}`;
-				// TODO: get request method through vanilla decorators
-				app.get(routePath, requestHandler);
-				app.post(routePath, requestHandler);
-
-				if (config.supportOldCase) {
-					const routePath = `/${controllerName}/${action}`;
-					app.get(routePath, requestHandler);
-					app.post(routePath, requestHandler);
-				}
+			} else {
+				registerHTTPController(app, '/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
 			}
 		}
 	}

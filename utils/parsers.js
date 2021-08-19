@@ -35,4 +35,13 @@ function parseMultipart (body, type) {
 	return result;
 }
 
-module.exports = { parseQueryString, parseMultipart };
+/**
+ * @param {number} part
+ */
+function parseIPv6Part (part) {
+    let result = part.toString(16);
+    if (result[1]) return result;
+    else return '0' + result;
+}
+
+module.exports = { parseQueryString, parseMultipart, parseIPv6Part };
