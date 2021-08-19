@@ -28,7 +28,7 @@ export class HTTPControllerContext extends ControllerBaseContext<Request, HttpRe
 	constructor (req: Request, res: HttpResponse);
     init (): Promise<void>;
 
-    send (data, code = 200, isPure = false): void;
+    send (data: any, code?: number, isPure?: boolean): void;
     drop (): void;
     redirect (url: string): void;
 }

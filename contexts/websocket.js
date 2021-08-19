@@ -36,12 +36,7 @@ class SocketControllerContext extends ControllerBaseContext {
     async init (sessionHeader) {
         if (Session.enabled) {
             try {
-                const session = await Session.parse(sessionHeader);
-                if (session.header) {
-                    this.emit('session', session.header);
-                }
-
-                this.session = session.object;
+                this._session = await Session.parse(sessionHeader);
             } catch (err) {
                 core.emitError({
                     isSystem: true,

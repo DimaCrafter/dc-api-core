@@ -22,18 +22,10 @@ if (config.session) {
 function cryptSession (_id) {
     let result = { _id, expires: Date.now() + config.session.ttl };
     result.sign = jwa.sign(result, config.session.secret);
-    return JSON.stringify(result);
+    return result;
 }
 
 function decodeSession (input) {
-    try {
-        input = JSON.parse(input);
-    } catch (err) {
-        return;
-    }
-
-    if (!input) return;
-
     const { sign } = input;
     delete input.sign;
 
@@ -43,20 +35,24 @@ function decodeSession (input) {
 }
 
 function wrap (document) {
-    document.save = cb => {
+    document.save = async () => {
+        await document._init;
         if (!document._id) return log.error('Can`t save session, _id field not present');
+
         const data = {};
         for (const key in document) {
             if (typeof key == 'function' || key == '_id') continue;
             data[key] = document[key];
         }
 
-        return db.Session.replaceOne({ _id: document._id }, data, cb);
+        return await db.Session.replaceOne({ _id: document._id }, data);
     }
 
-    document.destroy = cb => {
+    document.destroy = async () => {
+        await document._init;
         if (!document._id) return log.error('Can`t destroy session, _id field not present');
-        return db.Session.deleteOne({ _id: document._id }, cb);
+
+        return await db.Session.deleteOne({ _id: document._id });
     };
 
     return document;
@@ -64,24 +60,25 @@ function wrap (document) {
 
 module.exports = {
     enabled: !!config.session,
-    async create () {
-        const session = await db.Session.create({});
-        return {
-            header: cryptSession(session._id),
-            object: wrap(session.toObject())
-        };
+    init () {
+        const object = wrap({});
+        object._init = db.Session.create({}).then(document => {
+            object._id = document._id;
+            delete object._init;
+            return cryptSession(document._id)
+        });
+
+        return object;
     },
     async parse (header) {
-        if (!header) return await this.create();
+        if (!header) return;
 
         const parsed = decodeSession(header);
-        if (!parsed) return await this.create();
+        if (!parsed) return;
 
         let session = await db.Session.findById(parsed._id).lean();
-        if (!session) return await this.create();
+        if (!session) return;
 
-        return {
-            object: wrap(session)
-        };
+        return wrap(session);
     }
 };

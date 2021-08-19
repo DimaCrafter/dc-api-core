@@ -23,15 +23,9 @@ class HTTPControllerContext extends ControllerBaseContext {
     }
 
     async init () {
-        // TODO: disable session for dummy requests
         if (Session.enabled) {
             try {
-                const session = await Session.parse(this._req.headers.session);
-                if (session.header) {
-                    this._res.headers.session = session.header;
-                }
-
-                this.session = session.object;
+                this._session = await Session.parse(JSON.parse(this._req.headers.session));
             } catch (err) {
                 core.emitError({
                     isSystem: true,

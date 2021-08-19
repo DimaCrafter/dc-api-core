@@ -1,3 +1,5 @@
+const { HttpError } = require('..');
+const Session = require('../session');
 const { parseIPv6Part } = require('../utils/parsers');
 
 class ControllerBase {}
@@ -106,6 +108,31 @@ class ControllerBaseContext {
                 this._controllerProxy[key] = prop.bind(this);
             } else {
                 this._controllerProxy[key] = controller[key] || prop;
+            }
+        }
+    }
+
+    get session () {
+        if (this._session) return this._session;
+        else {
+            if (Session.enabled) {
+                this._session = Session.init();
+                this._session._init.then(header => {
+                    // @ts-ignore
+                    switch (this.type) {
+                        case 'http':
+                            this._res.headers.session = JSON.stringify(header);
+                            break;
+                        case 'ws':
+                            // @ts-ignore
+                            this.emit('session', header);
+                            break;
+                    }
+                });
+
+                return this._session;
+            } else {
+                throw new HttpError('Trying to access session when it is disabled', 500);
             }
         }
     }

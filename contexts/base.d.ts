@@ -1,4 +1,10 @@
-import { HttpRequest, HttpResponse } from 'uWebSockets.js'
+type Session = object & {
+	_id: { toString (): string },
+	/** Save current session data */
+	save (): Promise<void>;
+	/** Remove current session */
+	destroy (): Promise<void>;
+};
 
 export class ControllerBase {
 	/** Information about client IP-address */
@@ -9,7 +15,6 @@ export class ControllerBase {
 
 	/** Parsed query string */
 	query?: object;
-
 	/** Get request header */
 	header (name: string): void;
 	/** Set response header value */
@@ -17,6 +22,7 @@ export class ControllerBase {
 
 	/** Contains all fiels and methods of current controller */
     controller: object;
+	session: Session;
 }
 
 export class ControllerBaseContext<In, Out> {
@@ -25,4 +31,6 @@ export class ControllerBaseContext<In, Out> {
 	constructor (req: In, res: Out);
 
 	public type: string;
+	public session: Session;
+	protected _session: Session | undefined;
 }
