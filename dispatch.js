@@ -4,7 +4,7 @@ const log = require('./log');
 // Defined here due circular dependency
 module.exports = {};
 
-const { HTTPControllerContext } = require('./contexts/http');
+const { HttpControllerContext } = require('./contexts/http');
 const { SocketControllerContext } = require('./contexts/websocket');
 const Session = require('./session');
 
@@ -48,7 +48,7 @@ function catchError (ctx, err) {
 }
 
 module.exports.http = async (req, res, handler) => {
-    const ctx = new HTTPControllerContext(req, res);
+    const ctx = new HttpControllerContext(req, res);
     try {
         // TODO: check if session is required for this call through vanilla decorators
         await ctx.init();

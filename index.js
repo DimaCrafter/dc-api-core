@@ -44,8 +44,8 @@ const CORS = require('./utils/cors');
 
 const { SocketController, registerSocketController } = require('./contexts/websocket');
 exports.SocketController = SocketController;
-const { HTTPController, registerHTTPController } = require('./contexts/http');
-exports.HTTPController = HTTPController;
+const { HttpController, registerHttpController } = require('./contexts/http');
+exports.HttpController = HttpController;
 
 (async () => {
 	// Waiting startup.js
@@ -72,7 +72,7 @@ exports.HTTPController = HTTPController;
 			if (controller instanceof SocketController) {
 				registerSocketController(app, '/' + camelToKebab(controllerName), controller);
 			} else {
-				registerHTTPController(app, '/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
+				registerHttpController(app, '/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
 			}
 		}
 	}

@@ -62,6 +62,15 @@ class SocketControllerContext extends ControllerBaseContext {
         this._res.send(JSON.stringify(args));
     }
 
+    emitFirst (filter, ...args) {
+        for (const ctx of connected) {
+            if (filter(ctx)) {
+                ctx._res.send(JSON.stringify(args));
+                break;
+            }
+        }
+    }
+
     subscribe (channel) { channels.add(channel); }
     unsubscribe (channel) {
         if (channel) channels.delete(channel);

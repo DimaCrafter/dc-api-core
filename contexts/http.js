@@ -8,9 +8,9 @@ const { camelToKebab } = require('../utils/case-convert');
 const dispatch = require('../dispatch');
 const { getActionCaller } = require('../utils/loader');
 
-class HTTPController extends ControllerBase {}
+class HttpController extends ControllerBase {}
 
-class HTTPControllerContext extends ControllerBaseContext {
+class HttpControllerContext extends ControllerBaseContext {
     /**
 	 * @param {import('./http').Request} req
 	 * @param {import("uWebSockets.js").HttpResponse} res
@@ -93,7 +93,7 @@ class HTTPControllerContext extends ControllerBaseContext {
     }
 }
 
-function registerHTTPController (app, path, controller) {
+function registerHttpController (app, path, controller) {
 	for (const action of Object.getOwnPropertyNames(controller.__proto__)) {
 		if (action[0] == '_' || action == 'onLoad' || action == 'constructor') {
 			continue;
@@ -122,7 +122,7 @@ function registerHTTPController (app, path, controller) {
 }
 
 module.exports = {
-	HTTPController,
-	HTTPControllerContext,
-	registerHTTPController
+	HttpController,
+	HttpControllerContext,
+	registerHttpController
 };

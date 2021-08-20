@@ -1,7 +1,7 @@
 import { HttpRequest, HttpResponse, TemplatedApp } from 'uWebSockets.js';
 import { ControllerBase, ControllerBaseContext, Request } from './base'
 
-export class HTTPController extends ControllerBase {
+export class HttpController extends ControllerBase {
 	/** Parsed request payload */
 	data?: any;
 
@@ -24,7 +24,7 @@ type Request = HttpRequest & {
 	headers: { [key: string]: string }
 };
 
-export class HTTPControllerContext extends ControllerBaseContext<Request, HttpResponse> {
+export class HttpControllerContext extends ControllerBaseContext<Request, HttpResponse> {
 	constructor (req: Request, res: HttpResponse);
     init (): Promise<void>;
 
@@ -33,4 +33,4 @@ export class HTTPControllerContext extends ControllerBaseContext<Request, HttpRe
     redirect (url: string): void;
 }
 
-export function registerHTTPController (app: TemplatedApp, path: string, controller: HTTPController): void;
+export function registerHttpController (app: TemplatedApp, path: string, controller: HttpController): void;

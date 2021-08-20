@@ -1,6 +1,5 @@
-import { TemplatedApp } from 'uWebSockets.js';
-import { ControllerBaseContext } from './base';
-import { ControllerBase } from './base'
+import { TemplatedApp, WebSocket } from 'uWebSockets.js'
+import { ControllerBase, ControllerBaseContext } from './base'
 
 /**
  * This class marks controller as a WebSocket handler.
@@ -24,6 +23,11 @@ export class SocketController extends ControllerBase {
 	 */
 	emit (event: string, ...args: any[]): void;
 	/**
+	 * @param event Event name
+	 * @param args Any JSON-serializable arguments for handler function
+	 */
+	emitFirst (filter: (socket: SocketControllerContext) => boolean, event: string, ...args: any[]): void;
+	/**
 	 * Makes current connection subscribed to specified channel
 	 * @param channel Channel name
 	 */
@@ -43,19 +47,19 @@ export class SocketController extends ControllerBase {
 	broadcast (channel: string | null, event: string, ...args: any[]): void;
 }
 
-type Socket = Request & {
+type Socket = WebSocket & {
 	isClosed: boolean,
 	send (msg: stirng): void;
 	end (code: number, msg: stirng): void;
 };
 
-export class SocketControllerContext extends ControllerBaseContext<Socket> {
+export class SocketControllerContext extends ControllerBaseContext<Socket, Socket> {
 	constructor (ws: Socket);
 
     init (sessionHeader: string): Promise<void>;
     emit (event: string, ...args: any[]): void;
     end (msg?: stirng, code?: number): void;
-    _destroy (): void;
+    protected _destroy (): void;
 
     subscribe (channel: string): void;
     unsubscribe (channel: string): void;
