@@ -1,6 +1,5 @@
 const { getParts } = require('uWebSockets.js');
 
-// TODO: arrays and objects support
 function parseQueryString (value) {
 	const result = {};
 	for (const pair of value.split('&')) {

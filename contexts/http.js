@@ -75,9 +75,7 @@ class HttpControllerContext extends ControllerBaseContext {
 
     drop () {
         if (this._res.aborted) return;
-        this._res.aborted = true;
-        // Just ignoring request
-        // TODO: check efficiency
+        this._res.close();
     }
 
     /**

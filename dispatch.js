@@ -50,7 +50,6 @@ function catchError (ctx, err) {
 module.exports.http = async (req, res, handler) => {
     const ctx = new HttpControllerContext(req, res);
     try {
-        // TODO: check if session is required for this call through vanilla decorators
         await ctx.init();
     } catch (err) {
         return ctx.send(err.toString(), 500);

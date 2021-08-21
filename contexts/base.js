@@ -92,7 +92,6 @@ class ControllerBaseContext {
         return result;
     }
 
-    // TODO: no context without controller
     get controller () {
         return this._controllerProxy;
     }
