@@ -1,6 +1,4 @@
 const uWS = require('uWebSockets.js');
-require('./plugins').init();
-
 const config = require('./config');
 const log = require('./log');
 

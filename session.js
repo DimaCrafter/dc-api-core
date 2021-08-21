@@ -1,18 +1,23 @@
 const jwa = require('jwa')('HS256');
 const config = require('./config');
 const log = require('./log');
+const { connect: connectDatabase } = require('./db');
 
+/** @type {import('./db').DatabaseConnection<any>} */
 let db;
-if (config.session) {
-    const dbConfigName = config.session.store.split('.');
-    db = require('./DB')[dbConfigName[0]](dbConfigName[1]);
+const enabled = !!config.session;
+
+if (enabled) {
+    db = connectDatabase(config.session.store);
 
     const dbConfig = config.db[config.session.store];
     if (dbConfig.nonStrict) dbConfig.nonStrict.push('Session')
     else dbConfig.nonStrict = ['Session'];
 
     function cleanup () {
-        db.Session.deleteMany({ _id: { $lte: db.ObjectIdFromTime(Date.now() - config.session.ttl) } });
+        // TODO: unify ID convertation
+        // @ts-ignore
+        db.Session.deleteMany({ _id: { $lte: db._self.ObjectIdFromTime(Date.now() - config.session.ttl) } });
     }
 
     cleanup();
@@ -59,7 +64,7 @@ function wrap (document) {
 }
 
 module.exports = {
-    enabled: !!config.session,
+    enabled,
     init () {
         const object = wrap({});
         object._init = db.Session.create({}).then(document => {

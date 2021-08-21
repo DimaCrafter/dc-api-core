@@ -39,3 +39,7 @@ if (config.session) {
 delete config.dev;
 if (config.port == '$env') config.port = process.env.PORT;
 module.exports = config;
+
+if (config.plugins) {
+    for (const plugin of config.plugins) require(plugin);
+}
