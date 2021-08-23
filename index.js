@@ -13,36 +13,17 @@ const app = (() => {
 	}
 })();
 
-const errorHandlers = [];
-function emitError (info) {
-	for (const handler of errorHandlers) {
-		handler(info);
-	}
-}
-
-class HttpError {
-    constructor (message, code = 500) {
-        this.message = message;
-        this.code = code;
-    }
-}
-
-exports.HttpError = HttpError;
-exports.emitError = emitError;
-exports.onError = handler => errorHandlers.push(handler);
-
 const ROOT = process.cwd();
 const fs = require('fs');
 const { camelToKebab } = require('./utils/case-convert');
 const Router = require('./router');
 const { getController } = require('./utils/loader');
 const { prepareHttpConnection, fetchBody, abortRequest } = require('./utils/http');
-const dispatch = require('./dispatch');
 const CORS = require('./utils/cors');
 
 const { SocketController, registerSocketController } = require('./contexts/websocket');
 exports.SocketController = SocketController;
-const { HttpController, registerHttpController } = require('./contexts/http');
+const { HttpController, registerHttpController, dispatchHttp } = require('./contexts/http');
 exports.HttpController = HttpController;
 
 (async () => {
@@ -86,7 +67,7 @@ exports.HttpController = HttpController;
 		if (req.getMethod() == 'post') await fetchBody(req, res);
 		if (res.aborted) return;
 
-		await dispatch.http(req, res, ctx => {
+		await dispatchHttp(req, res, ctx => {
 			ctx.params = route.params;
 			return route.target(ctx);
 		});

@@ -1,4 +1,4 @@
-const { HttpError } = require('..');
+const { HttpError } = require('../errors');
 const Session = require('../session');
 const { parseIPv6Part } = require('../utils/parsers');
 

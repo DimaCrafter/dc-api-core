@@ -1,4 +1,4 @@
-const { emitError } = require('..');
+const { emitError } = require('../errors');
 const { parseQueryString, parseMultipart } = require('./parsers');
 const CORS = require('./cors');
 

@@ -34,3 +34,5 @@ export class HttpControllerContext extends ControllerBaseContext<Request, HttpRe
 }
 
 export function registerHttpController (app: TemplatedApp, path: string, controller: HttpController): void;
+
+export async function dispatchHttp (req: HttpRequest, res: HttpResponse, handler: (ctx: HttpControllerContext) => void): void;

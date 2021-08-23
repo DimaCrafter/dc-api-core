@@ -40,6 +40,10 @@ delete config.dev;
 if (config.port == '$env') config.port = process.env.PORT;
 module.exports = config;
 
+// Hacky way to fix v14.17.5 warning:
+// (node:8604) Warning: Accessing non-existent property 'colorPallete' of module exports inside circular dependency
+if (!config.colorPallete) config.colorPallete = null;
+
 if (config.plugins) {
     for (const plugin of config.plugins) require(plugin);
 }

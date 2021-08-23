@@ -1,4 +1,4 @@
-const core = require('.');
+const { emitError } = require('./errors');
 const config = require('./config');
 const log = require('./log');
 
@@ -10,7 +10,7 @@ function connect (connector, attempt = 0) {
         },
         error => {
             log.error(`Connection to ${connector._name} database was failed`, error);
-            core.emitError({
+            emitError({
                 isSystem: true,
                 type: 'DatabaseConnectionError',
                 name: connector._name,
@@ -54,7 +54,7 @@ function maintainConnector (connector, dbConfig) {
 
 const connections = {};
 const drivers = {};
-module.exports.registerDriver = (DriverClass, driverName) => {
+exports.registerDriver = (DriverClass, driverName) => {
     DriverClass.connect = (configKey, options) => {
         if (options && !options.identifier && !options.name) {
             return log.warn('Templated connection to database must have `identifier` field');
@@ -96,7 +96,7 @@ module.exports.registerDriver = (DriverClass, driverName) => {
     return DriverClass;
 }
 
-module.exports.connect = (configKey, options) => {
+exports.connect = (configKey, options) => {
     const [driverName, connectionName] = configKey.split('.', 2);
     const DriverClass = drivers[driverName];
 
@@ -105,4 +105,4 @@ module.exports.connect = (configKey, options) => {
 }
 
 const { EventEmitter } = require('events');
-module.exports.DatabaseDriver = class DatabaseDriver extends EventEmitter {}
+exports.DatabaseDriver = class DatabaseDriver extends EventEmitter {}

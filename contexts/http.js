@@ -1,11 +1,10 @@
 const { getResponseStatus, fetchBody, prepareHttpConnection } = require('../utils/http');
 const { ControllerBase, ControllerBaseContext } = require('./base');
-const core = require('..');
+const { emitError, HttpError } = require('../errors');
 const Session = require('../session');
 const CORS = require('../utils/cors');
 const config = require('../config');
 const { camelToKebab } = require('../utils/case-convert');
-const dispatch = require('../dispatch');
 const { getActionCaller } = require('../utils/loader');
 
 class HttpController extends ControllerBase {}
@@ -27,7 +26,7 @@ class HttpControllerContext extends ControllerBaseContext {
             try {
                 this._session = await Session.parse(JSON.parse(this._req.headers.session));
             } catch (err) {
-                core.emitError({
+                emitError({
                     isSystem: true,
                     type: 'SessionError',
                     code: 500,
@@ -103,7 +102,7 @@ function registerHttpController (app, path, controller) {
 			if (res.aborted) return;
 
 			if (req.getMethod() == 'post') await fetchBody(req, res);
-			await dispatch.http(req, res, handler);
+			await dispatch(req, res, handler);
 		};
 
 		const routePath = path + '/' + camelToKebab(action);
@@ -119,8 +118,44 @@ function registerHttpController (app, path, controller) {
 	}
 }
 
+async function dispatch (req, res, handler) {
+    const ctx = new HttpControllerContext(req, res);
+    try {
+        await ctx.init();
+    } catch (err) {
+        return ctx.send(err.toString(), 500);
+    }
+
+    try {
+        const result = await handler(ctx);
+        if (!res.aborted && result !== undefined) {
+            ctx.send(result);
+        }
+    } catch (err) {
+        if (err instanceof HttpError) {
+            ctx.send(err.message, err.code);
+            emitError({
+                isSystem: true,
+                type: 'DispatchError',
+                ...err,
+                error: err
+            });
+        } else {
+            ctx.send(err.toString(), 500);
+            emitError({
+                isSystem: true,
+                type: 'DispatchError',
+                code: 500,
+                message: err.message,
+                error: err
+            });
+        }
+    }
+}
+
 module.exports = {
 	HttpController,
 	HttpControllerContext,
-	registerHttpController
+	registerHttpController,
+    dispatchHttp: dispatch
 };
