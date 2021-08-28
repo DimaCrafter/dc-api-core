@@ -13,13 +13,14 @@ if (config.cors) {
 			info.headers.push(header.toLowerCase());
 		}
 	}
-	// @ts-ignore
-	info.headers = info.headers.join(',');
 
 	if (config.cors.ttl) {
 		info.ttl = config.cors.ttl.toString();
 	}
 }
+
+// @ts-ignore
+info.headers = info.headers.join(',');
 
 module.exports = {
 	preflight (req, res) {

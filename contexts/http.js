@@ -22,7 +22,7 @@ class HttpControllerContext extends ControllerBaseContext {
     }
 
     async init () {
-        if (Session.enabled) {
+        if (Session.enabled && this._req.headers.session) {
             try {
                 this._session = await Session.parse(JSON.parse(this._req.headers.session));
             } catch (err) {

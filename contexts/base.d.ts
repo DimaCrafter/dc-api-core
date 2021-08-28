@@ -1,9 +1,11 @@
 type Session = object & {
-	_id: { toString (): string },
+	_id: { toString (): string };
 	/** Save current session data */
 	save (): Promise<void>;
 	/** Remove current session */
 	destroy (): Promise<void>;
+
+	[key: string]: any;
 };
 
 export class ControllerBase {
@@ -21,7 +23,7 @@ export class ControllerBase {
 	header (name: string, value: string): void;
 
 	/** Contains all fiels and methods of current controller */
-    controller: object;
+	controller: { [key: string]: any };
 	session: Session;
 }
 

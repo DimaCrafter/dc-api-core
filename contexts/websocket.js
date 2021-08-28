@@ -8,7 +8,6 @@ const Session = require('../session');
 class SocketController extends ControllerBase {}
 
 let connected = [];
-const channels = new Set();
 /**
  * @extends {ControllerBaseContext<import('./websocket').Socket, import('./websocket').Socket>}
  */
@@ -22,6 +21,7 @@ class SocketControllerContext extends ControllerBaseContext {
         super(ws, ws);
 
         this.type = 'ws';
+        this._channels = new Set();
     }
 
     _destroy () {
@@ -70,10 +70,10 @@ class SocketControllerContext extends ControllerBaseContext {
         }
     }
 
-    subscribe (channel) { channels.add(channel); }
+    subscribe (channel) { this._channels.add(channel); }
     unsubscribe (channel) {
-        if (channel) channels.delete(channel);
-        else channels.clear();
+        if (channel) this._channels.delete(channel);
+        else this._channels.clear();
     }
 
     broadcast (channel, ...args) {
@@ -162,6 +162,7 @@ const WS_SYSTEM_EVENTS = ['open', 'close', 'error'];
 function dispatch (ws, controller) {
     let obj = {};
     const ctx = new SocketControllerContext(ws);
+    ctx.controller = controller;
 
     let initProgress;
     const init = async session => {

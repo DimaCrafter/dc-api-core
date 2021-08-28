@@ -70,23 +70,22 @@ if (config.colorPallete) {
 }
 
 const print = (type, text) => process.stdout.write(`${currentTheme[type] + currentTheme.TEXT + BOLD} ${type} ${RESET} ${text + RESET}\n`);
-module.exports = {
-    text: text => process.stdout.write(text + '\n'),
-    info: text => print('INFO', text),
-    success: text => print('OK', text),
-    warn: text => print('WARN', text),
-    error (text, err) {
-        print('ERR', text);
-        if (err) {
-            if (!(err instanceof Array)) {
-                err = err.toString().split('\n');
-            }
 
-            for (const line of err) {
-                process.stdout.write(` ${currentTheme.ERR_LINE}│${RESET} ${line}\n`);
-            }
-
-            process.stdout.write(` ${currentTheme.ERR_LINE}└─${RESET}\n`);
+exports.text = text => process.stdout.write(text + '\n'),
+exports.info = text => print('INFO', text),
+exports.success = text => print('OK', text),
+exports.warn = text => print('WARN', text),
+exports.error = (text, err) => {
+    print('ERR', text);
+    if (err) {
+        if (!(err instanceof Array)) {
+            err = err.toString().split('\n');
         }
+
+        for (const line of err) {
+            process.stdout.write(` ${currentTheme.ERR_LINE}│${RESET} ${line}\n`);
+        }
+
+        process.stdout.write(` ${currentTheme.ERR_LINE}└─${RESET}\n`);
     }
-};
+}

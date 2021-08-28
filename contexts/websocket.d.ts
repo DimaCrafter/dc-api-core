@@ -18,11 +18,14 @@ export class SocketController extends ControllerBase {
 	error (code: number, msg: string): void;
 
 	/**
+	 * Send event with payload to current socket
 	 * @param event Event name
 	 * @param args Any JSON-serializable arguments for handler function
 	 */
 	emit (event: string, ...args: any[]): void;
 	/**
+	 * Send event with payload to first matched socket
+	 * @param filter Socket matcher function
 	 * @param event Event name
 	 * @param args Any JSON-serializable arguments for handler function
 	 */
@@ -45,6 +48,12 @@ export class SocketController extends ControllerBase {
 	 * @param args Any JSON-serializable arguments for handler function
 	 */
 	broadcast (channel: string | null, event: string, ...args: any[]): void;
+	/**
+	 * Close socket connection
+	 * @param message empty string by default
+	 * @param code by default 1000 (closed without errors)
+	 */
+	end (message?: string, code?: number): void;
 }
 
 type Socket = WebSocket & {
@@ -58,7 +67,7 @@ export class SocketControllerContext extends ControllerBaseContext<Socket, Socke
 
     init (sessionHeader: string): Promise<void>;
     emit (event: string, ...args: any[]): void;
-    end (msg?: stirng, code?: number): void;
+    end (msg?: string, code?: number): void;
     protected _destroy (): void;
 
     subscribe (channel: string): void;
