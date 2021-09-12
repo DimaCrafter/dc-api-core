@@ -1,14 +1,16 @@
 import { HttpRequest, HttpResponse, TemplatedApp } from 'uWebSockets.js';
-import { ControllerBase, ControllerBaseContext, Request } from './base'
+import { ControllerBase, ControllerBaseContext } from './base'
 
 export class HttpController extends ControllerBase {
 	/** Parsed request payload */
 	data?: any;
+	/** Parameters parsed from route path */
+	params?: { [param: string]: string };
 
 	/** Drop the connection without responding to the request */
 	drop (): void;
 	/** Redirect user to specified URL */
-	redirect (url: Stirng): void;
+	redirect (url: string): void;
 	/**
 	 * Send response to client and close connection
 	 * @param data Payload to send
@@ -35,4 +37,4 @@ export class HttpControllerContext extends ControllerBaseContext<Request, HttpRe
 
 export function registerHttpController (app: TemplatedApp, path: string, controller: HttpController): void;
 
-export async function dispatchHttp (req: HttpRequest, res: HttpResponse, handler: (ctx: HttpControllerContext) => void): void;
+export function dispatchHttp (req: HttpRequest, res: HttpResponse, handler: (ctx: HttpControllerContext) => void): Promise<void>;

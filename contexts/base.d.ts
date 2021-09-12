@@ -16,9 +16,9 @@ export class ControllerBase {
 	}
 
 	/** Parsed query string */
-	query?: object;
+	query?: { [param: string]: string };
 	/** Get request header */
-	header (name: string): void;
+	header (name: string): string;
 	/** Set response header value */
 	header (name: string, value: string): void;
 
@@ -35,4 +35,9 @@ export class ControllerBaseContext<In, Out> {
 	public type: string;
 	public session: Session;
 	protected _session: Session | undefined;
+	/** Contains all fiels and methods of current controller */
+	controller: { [key: string]: any };
+
+	/** You can store custom data attached to request or connection in controller's context */
+	[key: string]: any;
 }
