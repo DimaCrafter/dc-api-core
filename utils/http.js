@@ -37,7 +37,12 @@ async function fetchBody (req, res) {
 	if (~delimIndex) contentType = contentType.slice(0, contentType.indexOf(';'));
 	contentType = contentType.toLowerCase();
 
-	const body = await getBody(res)
+	const bodySize = parseInt(req.headers['content-length']);
+	if (Number.isNaN(bodySize)) {
+		return abortRequest(res, 400, 'Content-Length header is invalid');
+	}
+
+	const body = await getBody(res, bodySize)
 	switch (contentType) {
 		case 'application/json':
 			try {
@@ -109,12 +114,19 @@ function abortRequest (res, code, message) {
  * @param {import('uWebSockets.js').HttpResponse} res
  * @returns {Promise<Buffer>}
  */
-function getBody (res) {
+function getBody (res, size) {
 	return new Promise(resolve => {
-		const parts = [];
+		const result = Buffer.allocUnsafe(size);
+		let offset = 0;
 		res.onData((chunk, isLast) => {
-			parts.push(Buffer.from(chunk));
-			if (isLast) resolve(Buffer.concat(parts));
+			chunk = new Uint8Array(chunk);
+			for (let i = 0; i < chunk.byteLength; i++) {
+				result[offset + i] = chunk[i];
+			}
+
+			offset += chunk.byteLength;
+
+			if (isLast) resolve(result);
 		});
 	});
 }
