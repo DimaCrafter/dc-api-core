@@ -76,3 +76,28 @@ export class SocketControllerContext extends ControllerBaseContext<Socket, Socke
 }
 
 export function registerSocketController (app: TemplatedApp, path: stirng, controller: SocketController): void;
+
+/**
+ * Send event with payload to first matched socket
+ * @param filter Socket matcher function
+ * @param event Event name
+ * @param args Any JSON-serializable arguments for handler function
+ */
+export function emitFirst (filter: (socket: SocketControllerContext) => boolean, event: string, ...args: any[]): void;
+/**
+ * Emits event for all conecctions that have subscription on specified channel.
+ * If channel name is null, event will be emitted for all active WebSocket connections.
+ * @param channel Channel name
+ * @param event Event name
+ * @param args Any JSON-serializable arguments for handler function
+ */
+export function broadcast (channel: string | null, event: string, ...args: any[]): void;
+/**
+ * Returns all WebSocket connections
+ */
+export function getConnections (): SocketControllerContext[];
+/**
+ * Returns all WebSocket connections subscribed to specified channel
+ * @param isUnique Enables sockets dedupe by session id
+ */
+export function getConnections (channel: string, isUnique?: boolean): Generator<SocketControllerContext, void>;

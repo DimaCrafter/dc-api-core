@@ -8,6 +8,59 @@ const Session = require('../session');
 class SocketController extends ControllerBase {}
 
 let connected = [];
+function* getFilteredConnections (filter) {
+    for (let i = 0; i < connected.length; i++) {
+        const socket = connected[i];
+        if (filter(socket)) yield socket;
+    }
+}
+
+function getConnections (channel = null, isUnique = false) {
+    if (channel) {
+        if (isUnique) {
+            const listed = [];
+            return getFilteredConnections(socket => {
+                if (socket._channels.has(channel)) {
+                    const id = socket.session._id.toString();
+                    if (~listed.indexOf(id)) return false;
+                    else {
+                        listed.push(id);
+                        return true;
+                    }
+                } else {
+                    return false;
+                }
+            });
+        } else {
+            return getFilteredConnections(socket => socket._channels.has(channel));
+        }
+    } else {
+        return connected;
+    }
+}
+
+function emitFirst (filter, ...args) {
+    for (const ctx of connected) {
+        if (filter(ctx)) {
+            ctx._res.send(JSON.stringify(args));
+            break;
+        }
+    }
+}
+
+function broadcast (channel, ...args) {
+    const payload = JSON.stringify(args);
+    if (channel) {
+        for (const ctx of connected) {
+            if (ctx._channels.has(channel)) ctx._req.send(payload);
+        }
+    } else {
+        for (const ctx of connected) {
+            ctx._req.send(payload);
+        }
+    }
+}
+
 /**
  * @extends {ControllerBaseContext<import('./websocket').Socket, import('./websocket').Socket>}
  */
@@ -22,6 +75,9 @@ class SocketControllerContext extends ControllerBaseContext {
 
         this.type = 'ws';
         this._channels = new Set();
+
+        this.emitFirst = emitFirst;
+        this.broadcast = broadcast;
     }
 
     _destroy () {
@@ -61,32 +117,10 @@ class SocketControllerContext extends ControllerBaseContext {
         this._res.send(JSON.stringify(args));
     }
 
-    emitFirst (filter, ...args) {
-        for (const ctx of connected) {
-            if (filter(ctx)) {
-                ctx._res.send(JSON.stringify(args));
-                break;
-            }
-        }
-    }
-
     subscribe (channel) { this._channels.add(channel); }
     unsubscribe (channel) {
         if (channel) this._channels.delete(channel);
         else this._channels.clear();
-    }
-
-    broadcast (channel, ...args) {
-        const payload = JSON.stringify(args);
-        if (channel) {
-            for (const ctx of connected) {
-                if (ctx._channels.has(channel)) ctx._req.send(payload);
-            }
-        } else {
-            for (const ctx of connected) {
-                ctx._req.send(payload);
-            }
-        }
     }
 
     end (msg = '', code = 1000) {
@@ -127,7 +161,7 @@ function registerSocketController (app, path, controller) {
 		message (ws, msg, isBinary) { ws.dispatch.message(msg, isBinary); },
 		close (ws, code, msg) {
 			ws.isClosed = true;
-			ws.dispatch.error(code, msg);
+			ws.dispatch.close(code, msg);
 		}
 	});
 }
@@ -184,9 +218,10 @@ function dispatch (ws, controller) {
     if (!Session.enabled) initProgress = init();
 
     obj.message = async msg => {
+        msg = Buffer.from(msg).toString();
         if (initProgress) await initProgress;
         try {
-            const parsed = JSON.parse(Buffer.from(msg).toString());
+            const parsed = JSON.parse(msg);
             if (parsed[0] == 'session') {
                 initProgress = init(parsed[1]);
                 return;
@@ -203,7 +238,7 @@ function dispatch (ws, controller) {
         }
     }
 
-    obj.error = async (code, msg) => {
+    obj.close = async (code, msg) => {
         // 0 - Clear close
         // 1001 - Page closed
         // 1006 & !message - Browser ended connection with no close frame.
@@ -226,9 +261,9 @@ function dispatch (ws, controller) {
         }
 
         if (ctx) {
-            if (controller.close) controller.close.call(ctx);
             // @ts-ignore
             ctx._destroy();
+            if (controller.close) controller.close.call(ctx);
         }
     }
 
@@ -239,5 +274,7 @@ module.exports = {
 	SocketController,
 	SocketControllerContext,
 	registerSocketController,
-    dispatchSocket: dispatch
+    dispatchSocket: dispatch,
+
+    emitFirst, broadcast, getConnections
 };
