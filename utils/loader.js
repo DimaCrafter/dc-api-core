@@ -11,7 +11,9 @@ module.exports = {
 			return controllers[name];
 		}
 
-		const ControllerClass = require(ROOT + '/controllers/' + name + '.js');
+		return module.exports.registerController(name, require(ROOT + '/controllers/' + name + '.js'));
+	},
+	registerController (name, ControllerClass) {
 		if (typeof ControllerClass != 'function') {
 			throw new Error(`Exported value from ${name} controller isn't a class`);
 		}

@@ -270,3 +270,5 @@ module.exports = Test;
 * [ ] Support for glibc < 2.18
 * [ ] Typing (`.d.ts`) files
 * [ ] Automatical package publication when all tests are passed
+* [ ] More functionality tests
+* [ ] Clusterization/multi-threading support

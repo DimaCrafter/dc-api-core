@@ -12,6 +12,7 @@ const app = (() => {
 		return uWS.App();
 	}
 })();
+module.exports._app = app;
 
 const ROOT = process.cwd();
 const fs = require('fs');
@@ -43,17 +44,21 @@ exports.HttpController = HttpController;
 	});
 
 	// Preloading controllers
-	for (let controllerName of fs.readdirSync(ROOT + '/controllers')) {
-		if (controllerName.endsWith('.js')) {
-			controllerName = controllerName.slice(0, -3);
-			const controller = getController(controllerName);
+	try {
+		for (let controllerName of fs.readdirSync(ROOT + '/controllers')) {
+			if (controllerName.endsWith('.js')) {
+				controllerName = controllerName.slice(0, -3);
+				const controller = getController(controllerName);
 
-			if (controller instanceof SocketController) {
-				registerSocketController(app, '/' + camelToKebab(controllerName), controller);
-			} else {
-				registerHttpController(app, '/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
+				if (controller instanceof SocketController) {
+					registerSocketController(app, '/' + camelToKebab(controllerName), controller);
+				} else {
+					registerHttpController(app, '/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
+				}
 			}
 		}
+	} catch {
+		// TODO: error reporting (excluding ENOENT)
 	}
 
 	// TODO: do smth with custom routes
