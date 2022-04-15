@@ -17,7 +17,7 @@ if (enabled) {
     function cleanup () {
         // TODO: unify ID convertation
         // @ts-ignore
-        db.Session.deleteMany({ _id: { $lte: db._self.ObjectIdFromTime(Date.now() - config.session.ttl) } });
+        db.Session.deleteMany({ _id: { $lte: db._self.ObjectIdFromTime(Date.now() - config.session.ttl) } }).exec();
     }
 
     cleanup();

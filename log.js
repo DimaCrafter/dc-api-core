@@ -53,20 +53,20 @@ function buildTheme (pallete) {
     currentTheme.TEXT = parser(({ ansi: 7, named: 255, rgb: [255, 255, 255] })[pallete], FG);
 }
 
-if (config.colorPallete) {
-    buildTheme(config.colorPallete);
+if (config.colorPallette) {
+    buildTheme(config.colorPallette);
 } else {
     if (process.env.COLORTERM) {
         if (process.env.COLORTERM == 'truecolor' || process.env.COLORTERM == 'x24') {
-            config.colorPallete = 'rgb';
+            config.colorPallette = 'rgb';
         } else if (~process.env.COLORTERM.indexOf('256color')) {
-            config.colorPallete = 'named';
+            config.colorPallette = 'named';
         }
     } else {
-        config.colorPallete = 'ansi';
+        config.colorPallette = 'ansi';
     }
 
-    buildTheme(config.colorPallete);
+    buildTheme(config.colorPallette);
 }
 
 const print = (type, text) => process.stdout.write(`${currentTheme[type] + currentTheme.TEXT + BOLD} ${type} ${RESET} ${text + RESET}\n`);

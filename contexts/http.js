@@ -4,7 +4,7 @@ const { emitError, HttpError } = require('../errors');
 const Session = require('../session');
 const CORS = require('../utils/cors');
 const config = require('../config');
-const { camelToKebab } = require('../utils/case-convert');
+const { camelToKebab } = require('../utils');
 const { getActionCaller } = require('../utils/loader');
 
 class HttpController extends ControllerBase {}

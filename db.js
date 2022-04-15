@@ -1,6 +1,7 @@
 const { emitError } = require('./errors');
 const config = require('./config');
 const log = require('./log');
+const Path = require('path');
 
 function connect (connector, attempt = 0) {
     connector.connect().then(
@@ -37,7 +38,7 @@ function connect (connector, attempt = 0) {
 function maintainConnector (connector, dbConfig) {
     connect(connector);
 
-    const MODELS_BASE_PATH = process.cwd() + '/models/' + dbConfig._name;
+    const MODELS_BASE_PATH = Path.join(process.cwd(), 'models', dbConfig._name);
     return new Proxy(connector, {
         get (connector, /** @type {string} */ prop) {
             if (prop in connector) return connector[prop];

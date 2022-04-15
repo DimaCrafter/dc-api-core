@@ -1,3 +1,4 @@
+const Path = require('path');
 const ROOT = process.cwd();
 let controllers = {};
 
@@ -11,7 +12,7 @@ module.exports = {
 			return controllers[name];
 		}
 
-		return module.exports.registerController(name, require(ROOT + '/controllers/' + name + '.js'));
+		return module.exports.registerController(name, require(Path.join(ROOT, 'controllers', name + '.js')));
 	},
 	registerController (name, ControllerClass) {
 		if (typeof ControllerClass != 'function') {

@@ -16,7 +16,7 @@ module.exports._app = app;
 
 const ROOT = process.cwd();
 const fs = require('fs');
-const { camelToKebab } = require('./utils/case-convert');
+const { camelToKebab } = require('./utils');
 const Router = require('./router');
 const { getController } = require('./utils/loader');
 const { prepareHttpConnection, fetchBody, abortRequest } = require('./utils/http');

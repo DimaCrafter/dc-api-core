@@ -29,11 +29,11 @@ module.exports = class Info {
     status () {
         // Sends an object with installed \`dc-api-core\` version
         // and current server time in response
-        this.send({
+        return {
             version: pkg.version,
             time: new Date().toLocaleString(),
             something_configurable
-        });
+        };
     }
 }
         `.trim() + '\n');
@@ -51,7 +51,7 @@ module.exports = class Info {
     }
 
     log.info('Creating dc-api-core scripts...');
-    const pkg = JSON.parse(fs.readFileSync(ROOT + '/package.json'));
+    const pkg = JSON.parse(fs.readFileSync(ROOT + '/package.json').toString());
 
     if (!pkg.scripts) pkg.scripts = {};
     pkg.scripts.start = 'dc-api-core';

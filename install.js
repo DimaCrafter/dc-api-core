@@ -16,9 +16,9 @@ function prompt (question, list) {
 	return new Promise(resolve => {
 		process.stdout.write(question + ' ');
 		process.stdin.resume();
-		process.stdin.once('data', answer => {
+		process.stdin.once('data', chunk => {
 			process.stdin.pause();
-			answer = answer.toString().replace(/\r?\n/, '').toLowerCase();	
+			const answer = chunk.toString().replace(/\r?\n/, '').toLowerCase();
 			if (list && !~list.indexOf(answer)) prompt(question, list).then(resolve);
 			else resolve(answer);
 		});
