@@ -43,4 +43,38 @@ function parseIPv6Part (part) {
     else return '0' + result;
 }
 
-module.exports = { parseQueryString, parseMultipart, parseIPv6Part };
+/** @typedef {(req: import('../contexts/http').Request, body: Buffer) => { body: any, error?: undefined } | { error: Error, message: string }} HttpBodyParser */
+/** @type {{ [type: string]: HttpBodyParser }} */
+const HTTP_TYPES = {
+	'application/json' (_req, body) {
+		try {
+			return { body: JSON.parse(body.toString()) };
+		} catch (error) {
+			return { error, message: 'Incorrect JSON body: ' + error.message };
+		}
+	},
+	'application/x-www-form-urlencoded' (_req, body) {
+		return { body: parseQueryString(body.toString()) };
+	},
+	'multipart/form-data' (req, body) {
+		try {
+			// Only JSON error can be thrown from this parser
+			return { body: parseMultipart(body, req.headers['content-type']) };
+		} catch (error) {
+			return { error, message: 'Incorrect `json` field: ' + error.message };
+		}
+	}
+};
+
+/**
+ * @param {string} type Content-Type header value
+ * @param {HttpBodyParser} parser
+ */
+function registerContentType (type, parser) {
+	HTTP_TYPES[type] = parser;
+}
+
+module.exports = {
+	HTTP_TYPES, registerContentType,
+	parseQueryString, parseMultipart, parseIPv6Part
+};

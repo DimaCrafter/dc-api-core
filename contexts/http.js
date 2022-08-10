@@ -102,6 +102,8 @@ function registerHttpController (app, path, controller) {
 			if (res.aborted) return;
 
 			if (req.getMethod() == 'post') await fetchBody(req, res);
+            if (res.aborted) return;
+
 			await dispatch(req, res, handler);
 		};
 

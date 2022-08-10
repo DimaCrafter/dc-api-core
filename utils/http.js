@@ -1,5 +1,5 @@
 const { emitError } = require('../errors');
-const { parseQueryString, parseMultipart } = require('./parsers');
+const { parseQueryString, HTTP_TYPES } = require('./parsers');
 const CORS = require('./cors');
 
 /**
@@ -34,7 +34,7 @@ async function fetchBody (req, res) {
 	}
 
 	const delimIndex = contentType.indexOf(';');
-	if (~delimIndex) contentType = contentType.slice(0, contentType.indexOf(';'));
+	if (delimIndex != -1) contentType = contentType.slice(0, delimIndex);
 	contentType = contentType.toLowerCase();
 
 	const bodySize = parseInt(req.headers['content-length']);
@@ -42,58 +42,36 @@ async function fetchBody (req, res) {
 		return abortRequest(res, 400, 'Content-Length header is invalid');
 	}
 
-	const body = await getBody(res, bodySize)
-	switch (contentType) {
-		case 'application/json':
-			try {
-				// @ts-ignore
-				req.body = JSON.parse(body);
-			} catch (error) {
-				emitError({
-					isSystem: true,
-					type: 'RequestError',
-					code: 400,
-					url: req.path,
-					message: 'Incorrect JSON body',
-					error,
-					body
-				});
-
-				return abortRequest(res, 400, 'Incorrect JSON body');
-			}
-			break;
-		case 'application/x-www-form-urlencoded':
-			req.body = parseQueryString(body.toString());
-			break;
-		case 'multipart/form-data':
-			try {
-				// Only JSON error can be thrown from this parser
-				req.body = parseMultipart(body, req.headers['content-type']);
-			} catch (error) {
-				emitError({
-					isSystem: true,
-					type: 'RequestError',
-					code: 400,
-					url: req.path,
-					message: 'Incorrect `json` field',
-					error,
-					body
-				});
-
-				return abortRequest(res, 400, 'Incorrect `json` field');
-			}
-			break;
-		default:
+	const parseBody = HTTP_TYPES[contentType];
+	if (parseBody) {
+		const rawBody = await getBody(res, bodySize);
+		const result = parseBody(req, rawBody);
+		if (result.error) {
 			emitError({
 				isSystem: true,
 				type: 'RequestError',
 				code: 400,
 				url: req.path,
-				message: 'Content-Type not supported',
-				value: contentType
+				message: result.message,
+				error: result.error,
+				body: rawBody
 			});
 
-			return abortRequest(res, 400, 'Content-Type not supported');
+			return abortRequest(res, 400, result.message);
+		} else {
+			req.body = result.body;
+		}
+	} else {
+		emitError({
+			isSystem: true,
+			type: 'RequestError',
+			code: 400,
+			url: req.path,
+			message: 'Content-Type not supported',
+			value: contentType
+		});
+
+		return abortRequest(res, 400, 'Content-Type not supported');
 	}
 }
 
@@ -101,9 +79,9 @@ function abortRequest (res, code, message) {
 	if (res.aborted) return;
 	res.cork(() => {
 		res.writeStatus(getResponseStatus(code));
-		res.writeHeader('Content-Type', 'application/json');
+		res.writeHeader('Content-Type', 'text/plain');
 		CORS.normal(null, res);
-		res.end('"' + message + '"');
+		res.end(message);
 	});
 
 	res.aborted = true;
