@@ -57,8 +57,9 @@ exports.HttpController = HttpController;
 				}
 			}
 		}
-	} catch {
-		// TODO: error reporting (excluding ENOENT)
+	} catch(err) {
+    		// TODO: error reporting (excluding ENOENT)
+    		console.log(err);
 	}
 
 	// TODO: do smth with custom routes
