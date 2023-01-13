@@ -15,7 +15,7 @@
 ## Dependencies
 
 * [jwa](https://github.com/auth0/node-jwa)
-* [zeit/ms](https://github.com/zeit/ms)
+* [vercel/ms](https://github.com/vercel/ms)
 * [μWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
 * [watch](https://github.com/mikeal/watch)
 
@@ -30,7 +30,7 @@
  │   └── 📁 <driver>     Database driver name (Optional)
  │       └── 📜 <model>  Model name (js or json)
  ├── ️📃 config.json      Configuration file
- └── ⏱ startup.js       Script, that was started before strting API server
+ └── ⏱ startup.js       Script, that was started before starting API server
 ```
 
 ---
@@ -67,7 +67,7 @@ Options:
 | Field                 | Default             | Description                                  |
 |-----------------------|---------------------|----------------------------------------------|
 | `db`                  | Optional            | Object                                       |
-| `db[driverName]`      |                     | Code of [database driver](#DB-module)        |
+| `db[driverName]`      |                     | Code of [database driver](#db-module)        |
 | `db[driverName].name` | Required            | Database name                                |
 | `db[driverName].port` | Defined by plugin   | Database port                                |
 | `db[driverName].user` | Optional            | Database username                            |
@@ -76,7 +76,7 @@ Options:
 |                       |                     |                                              |
 | `session.secret`      | Required            | Private string for cookie                    |
 | `session.store`       | Required            | Database config name                         |
-| `session.ttl`         | `3d` (3 days)       | Session lifetime in [zeit/ms] format         |
+| `session.ttl`         | `3d` (3 days)       | Session lifetime in [vercel/ms] format       |
 |                       |                     |                                              |
 | `ssl`                 | Optional            | Enables HTTPS mode if filled                 |
 | `ssl.*`               | Optional            | Any `μWS.SSLApp` options field               |
@@ -93,7 +93,7 @@ Options:
 | `dev`                 | `{}`                | Config to merge if `isDev` is `true`         |
 | `ttl`                 | `0`                 | WebSocket TTL in seconds, `0` - disabled     |
 
-[zeit/ms]: https://github.com/zeit/ms
+[vercel/ms]: https://github.com/vercel/ms
 
 Example:
 
@@ -269,6 +269,6 @@ module.exports = Test;
 
 * [ ] Support for glibc < 2.18
 * [ ] Typing (`.d.ts`) files
-* [ ] Automatical package publication when all tests are passed
+* [ ] Automatic package publication when all tests are passed
 * [ ] More functionality tests
 * [ ] Clusterization/multi-threading support

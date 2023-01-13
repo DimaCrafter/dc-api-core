@@ -44,8 +44,8 @@ exports.HttpController = HttpController;
 	});
 
 	// Preloading controllers
-	try {
-		for (let controllerName of fs.readdirSync(ROOT + '/controllers')) {
+	for (let controllerName of fs.readdirSync(ROOT + '/controllers')) {
+		try {
 			if (controllerName.endsWith('.js')) {
 				controllerName = controllerName.slice(0, -3);
 				const controller = getController(controllerName);
@@ -56,9 +56,10 @@ exports.HttpController = HttpController;
 					registerHttpController(app, '/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
 				}
 			}
+		} catch (err) {
+			log.error(`Loading "${controllerName}" controller failed`, err);
+			process.exit(-1);
 		}
-	} catch {
-		// TODO: error reporting (excluding ENOENT)
 	}
 
 	// TODO: do smth with custom routes
@@ -83,9 +84,14 @@ exports.HttpController = HttpController;
 		const controller = getController('Socket');
 		if (!(controller instanceof SocketController)) {
 			registerSocketController(app, '/socket', controller);
-			log.warn('Deprecated usage of `Socket` controller without extending `SocketController`');
+			log.warn('Deprecated usage of "Socket" controller without extending `SocketController`');
 		}
-	} catch {}
+	} catch (err) {
+		if (!err.message.includes('Cannot find module')) {
+			log.error('Loading "Socket" controller failed', err);
+			process.exit(-1);
+		}
+	}
 
 	// Listening port
 	app.listen(config.port, socket => {

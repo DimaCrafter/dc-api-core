@@ -1,4 +1,6 @@
 const config = require('./config');
+const { splitError } = require('./errors');
+
 const LOG_COLORS = {
     INFO: {
         ansi: 6,
@@ -28,9 +30,9 @@ const RESET = '\x1B[0m';
 const BOLD = '\x1B[1m';
 
 const currentTheme = {};
-function buildTheme (pallete) {
+function buildTheme (pallette) {
     let parser;
-    switch (pallete) {
+    switch (pallette) {
         case 'rgb':
             parser = (color, offset) => `\x1B[${offset + 8};2;${color[0]};${color[1]};${color[2]}m`;
             break;
@@ -41,16 +43,16 @@ function buildTheme (pallete) {
             parser = (color, offset = FG) => `\x1B[${color + offset}m`;
             break;
         default:
-            process.stdout.write('Incorrect color pallete\n');
+            process.stdout.write('Incorrect color pallette\n');
             process.exit();
     }
 
     for (const type in LOG_COLORS) {
-        currentTheme[type] = parser(LOG_COLORS[type][pallete], BG);
+        currentTheme[type] = parser(LOG_COLORS[type][pallette], BG);
     }
 
-    currentTheme.ERR_LINE = parser(LOG_COLORS.ERR[pallete], FG);
-    currentTheme.TEXT = parser(({ ansi: 7, named: 255, rgb: [255, 255, 255] })[pallete], FG);
+    currentTheme.ERR_LINE = parser(LOG_COLORS.ERR[pallette], FG);
+    currentTheme.TEXT = parser(({ ansi: 7, named: 255, rgb: [255, 255, 255] })[pallette], FG);
 }
 
 if (config.colorPallette) {
@@ -78,9 +80,7 @@ exports.warn = text => print('WARN', text),
 exports.error = (text, err) => {
     print('ERR', text);
     if (err) {
-        if (!(err instanceof Array)) {
-            err = err.toString().split('\n');
-        }
+        if (!(err instanceof Array)) err = splitError(err);
 
         for (const line of err) {
             process.stdout.write(` ${currentTheme.ERR_LINE}│${RESET} ${line}\n`);
