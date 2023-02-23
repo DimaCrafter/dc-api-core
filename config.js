@@ -37,8 +37,4 @@ if (configArgIndex !== -1) {
 }
 
 delete require.cache[configPath];
-const config = module.exports = proceedConfig(require(configPath));
-
-if (config.plugins) {
-    for (const plugin of config.plugins) require(plugin);
-}
+module.exports = proceedConfig(require(configPath));

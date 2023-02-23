@@ -1,7 +1,9 @@
 const uWS = require('uWebSockets.js');
+const { readdirSync } = require('fs');
 const config = require('./config');
 const log = require('./log');
 
+const ROOT = process.cwd();
 const app = (() => {
 	if (config.ssl) {
 		const opts = { ...config.ssl };
@@ -12,13 +14,11 @@ const app = (() => {
 		return uWS.App();
 	}
 })();
-module.exports._app = app;
 
-const ROOT = process.cwd();
-const fs = require('fs');
+
 const { camelToKebab } = require('./utils');
 const Router = require('./router');
-const { getController } = require('./utils/loader');
+const { getController, executeStartup } = require('./utils/loader');
 const { prepareHttpConnection, fetchBody, abortRequest } = require('./utils/http');
 const CORS = require('./utils/cors');
 
@@ -27,15 +27,7 @@ exports.SocketController = SocketController;
 const { HttpController, registerHttpController, dispatchHttp } = require('./contexts/http');
 exports.HttpController = HttpController;
 
-(async () => {
-	// Waiting startup.js
-	if (fs.existsSync(ROOT + '/startup.js')) {
-		log.info('Running startup script')
-		let startup = require(ROOT + '/startup.js');
-		if (typeof startup == 'function') startup = startup.apply({});
-		if (startup instanceof Promise) await startup;
-	}
-
+executeStartup().then(() => {
 	// CORS preflight request
 	app.options('/*', (res, req) => {
 		CORS.preflight(req, res);
@@ -44,7 +36,7 @@ exports.HttpController = HttpController;
 	});
 
 	// Preloading controllers
-	for (let controllerName of fs.readdirSync(ROOT + '/controllers')) {
+	for (let controllerName of readdirSync(ROOT + '/controllers')) {
 		try {
 			if (controllerName.endsWith('.js')) {
 				controllerName = controllerName.slice(0, -3);
@@ -99,4 +91,4 @@ exports.HttpController = HttpController;
 		if (socket) log.success('Server started ' + status);
 		else log.error('Can`t start server ' + status);
 	});
-})();
+});
