@@ -47,7 +47,11 @@ exports.executeStartup = async () => {
 	if (config.plugins) {
 		for (const plugin of config.plugins) {
 			try {
-				require(plugin);
+				if (plugin.startsWith('local:')) {
+					require(Path.join(ROOT, plugin.slice(6)));
+				} else {
+					require(plugin);
+				}
 			} catch (err) {
 				log.error(`Cannot load plugin "${plugin}"`, err);
 				process.exit(-1);
