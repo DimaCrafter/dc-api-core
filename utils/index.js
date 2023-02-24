@@ -1,15 +1,21 @@
+const UPPER_CHARS = 'QWERTYUIOPLKJHGFDSAZXCVBNM';
+const LOWER_CHARS = 'qwertyuioplkjhgfdsazxcvbnm';
+
 function camelToKebab (value) {
     let isLastUpper = false;
     let result = '';
 
     for (const char of value) {
-        if (char.toUpperCase() == char) {
-            if (isLastUpper) result += char.toLowerCase();
-            else result += '-' + char.toLowerCase();
+        const upperIndex = UPPER_CHARS.indexOf(char);
+        if (upperIndex != -1) {
+            if (!isLastUpper) result += '-';
+            result += LOWER_CHARS[upperIndex];
             isLastUpper = true;
         } else {
             result += char;
-            isLastUpper = false;
+            if (LOWER_CHARS.includes(char)) {
+                isLastUpper = false;
+            }
         }
     }
 
