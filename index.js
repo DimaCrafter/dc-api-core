@@ -1,5 +1,5 @@
 const uWS = require('uWebSockets.js');
-const { readdirSync } = require('fs');
+const { readdirSync, existsSync } = require('fs');
 const config = require('./config');
 const log = require('./log');
 
@@ -35,8 +35,16 @@ executeStartup().then(() => {
 		res.end();
 	});
 
+	let controllersDirContents;
+	if (existsSync(ROOT + '/controllers')) {
+		controllersDirContents = readdirSync(ROOT + '/controllers');
+	} else {
+		controllersDirContents = [];
+		log.warn('No "controllers" directory');
+	}
+
 	// Preloading controllers
-	for (let controllerName of readdirSync(ROOT + '/controllers')) {
+	for (let controllerName of controllersDirContents) {
 		try {
 			if (controllerName.endsWith('.js')) {
 				controllerName = controllerName.slice(0, -3);

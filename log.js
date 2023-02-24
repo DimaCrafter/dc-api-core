@@ -1,5 +1,5 @@
-const config = require('./config');
 const { splitError } = require('./errors');
+const { getArg } = require('./utils');
 
 const LOG_COLORS = {
     INFO: {
@@ -43,8 +43,8 @@ function buildTheme (pallette) {
             parser = (color, offset = FG) => `\x1B[${color + offset}m`;
             break;
         default:
-            process.stdout.write('Incorrect color pallette\n');
-            process.exit();
+            process.stdout.write(`Unknown color pallette "${pallette}"\n`);
+            process.exit(-1);
     }
 
     for (const type in LOG_COLORS) {
@@ -55,23 +55,25 @@ function buildTheme (pallette) {
     currentTheme.TEXT = parser(({ ansi: 7, named: 255, rgb: [255, 255, 255] })[pallette], FG);
 }
 
-if (config.colorPallette) {
-    buildTheme(config.colorPallette);
-} else {
+// todo! doc changes
+let pallette = getArg('--colors');
+if (!pallette) {
     if (process.env.COLORTERM) {
         if (process.env.COLORTERM == 'truecolor' || process.env.COLORTERM == 'x24') {
-            config.colorPallette = 'rgb';
+            pallette = 'rgb';
         } else if (~process.env.COLORTERM.indexOf('256color')) {
-            config.colorPallette = 'named';
+            pallette = 'named';
         }
     } else {
-        config.colorPallette = 'ansi';
+        pallette = 'ansi';
     }
-
-    buildTheme(config.colorPallette);
 }
 
-const print = (type, text) => process.stdout.write(`${currentTheme[type] + currentTheme.TEXT + BOLD} ${type} ${RESET} ${text + RESET}\n`);
+buildTheme(pallette);
+
+const print = (type, text) => {
+    process.stdout.write(`${currentTheme[type]}${currentTheme.TEXT}${BOLD} ${type} ${RESET} ${text}${RESET}\n`);
+}
 
 exports.text = text => process.stdout.write(text + '\n'),
 exports.info = text => print('INFO', text),

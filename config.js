@@ -1,40 +1,58 @@
 const Path = require('path');
 const ms = require('ms');
-const { mergeObj } = require('./utils');
-const configArgIndex = process.argv.indexOf('--cfg');
+const { existsSync } = require('fs');
+const { mergeObj, getArg, getFlag } = require('./utils');
+const log = require('./log');
 
-function proceedConfig (config) {
-    config.port = config.port || 8081;
-    config.isDev = process.argv.indexOf('--dev') !== -1;
+const ROOT = process.cwd();
+function load (path) {
+    try {
+        return require(path);
+    } catch (error) {
+        log.error('Config loading error', error);
+        process.exit(-1);
+    }
+}
 
-    if (config.isDev) {
-        if (config.dev) {
-            mergeObj(config, config.dev);
-        }
+let config;
+let configPath = getArg('--cfg');
+if (configPath) {
+    if (configPath[0] != '/') configPath = Path.join(ROOT, configPath);
 
-        config.ignore = config.ignore || [];
-        if (!~config.ignore.indexOf('node_modules')) config.ignore.push('node_modules');
+    if (!existsSync(configPath)) {
+        log.error('Config file not found');
+        process.exit(-1);
     }
 
-    if (config.session) {
-        config.session.ttl = config.session.ttl || '3d';
-        if (typeof config.session.ttl == 'string') config.session.ttl = ms(config.session.ttl);
-    }
+    config = load(configPath);
+} else {
+    configPath = require.resolve(Path.join(ROOT, 'config'));
+    config = existsSync(configPath) ? load(configPath) : {};
+}
 
-    delete config.dev;
+if (config.port) {
     if (config.port == '$env') config.port = process.env.PORT;
-
-    // Hacky way to fix v14.17.5 warning:
-    // (node:8604) Warning: Accessing non-existent property 'colorPallette' of module exports inside circular dependency
-    if (!config.colorPallette) config.colorPallette = null;
-    return config;
+} else {
+    config.port = 8081;
 }
 
-let configPath = Path.join(process.cwd(), 'config');
-if (configArgIndex !== -1) {
-    configPath = process.argv[configArgIndex + 1];
-    if (!configPath.startsWith('/')) configPath = Path.join(process.cwd(), configPath);
+config.db = config.db || {};
+config.isDev = getFlag('--dev');
+
+if (config.isDev) {
+    if (config.dev) {
+        mergeObj(config, config.dev);
+    }
+
+    config.ignore = config.ignore || [];
+    if (!~config.ignore.indexOf('node_modules')) config.ignore.push('node_modules');
 }
 
-delete require.cache[configPath];
-module.exports = proceedConfig(require(configPath));
+delete config.dev;
+
+if (config.session) {
+    config.session.ttl = config.session.ttl || '3d';
+    if (typeof config.session.ttl == 'string') config.session.ttl = ms(config.session.ttl);
+}
+
+module.exports = config;

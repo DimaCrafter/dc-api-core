@@ -13,7 +13,7 @@ exports.HttpError = class HttpError {
     }
 }
 
-const INTERNAL_REGEXP = /(.+\(internal\/modules\/|\s*at internal\/).+(\n|$)/g;
+const INTERNAL_REGEXP = /(.+\(internal\/modules\/|\s*at internal\/|.+\(node:).+(\n|$)/g;
 exports.clearErrorStack = stack => {
 	return stack.replace(INTERNAL_REGEXP, '');
 };

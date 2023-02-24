@@ -27,4 +27,13 @@ function mergeObj (target, source) {
     });
 }
 
-module.exports = { camelToKebab, mergeObj };
+function getArg (name) {
+    const i = process.argv.indexOf(name);
+    return i == -1 ? null: process.argv[i + 1];
+}
+
+function getFlag (name) {
+    return process.argv.includes(name);
+}
+
+module.exports = { camelToKebab, mergeObj, getArg, getFlag };
