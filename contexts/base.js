@@ -112,28 +112,15 @@ class ControllerBaseContext {
     }
 
     get session () {
-        if (this._session) return this._session;
-        else {
-            if (Session.enabled) {
-                this._session = Session.init();
-                this._session._init.then(header => {
-                    // @ts-ignore
-                    switch (this.type) {
-                        case 'http':
-                            this._res.headers.session = JSON.stringify(header);
-                            break;
-                        case 'ws':
-                            // @ts-ignore
-                            this.emit('session', header);
-                            break;
-                    }
-                });
-
-                return this._session;
-            } else {
-                throw new HttpError('Trying to access session when it is disabled', 500);
-            }
+        if (!Session.enabled) {
+            throw new HttpError('Trying to access session when it is disabled', 500);
         }
+
+        if (!this._session) {
+            this._session = Session.init();
+        }
+
+        return this._session;
     }
 }
 

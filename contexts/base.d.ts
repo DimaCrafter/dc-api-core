@@ -33,7 +33,7 @@ export class ControllerBaseContext<In, Out> {
 	constructor (req: In, res: Out);
 
 	public type: string;
-	public session: Session;
+	public get session (): Session;
 	protected _session: Session | undefined;
 	/** Contains all fiels and methods of current controller */
 	controller: { [key: string]: any };

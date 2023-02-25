@@ -24,42 +24,61 @@ async function connect (connector, attempt = 0) {
     }
 }
 
+function makeModel (connector, modelName, schema) {
+    for (const field in schema) {
+        const descriptor = schema[field];
+        if (descriptor instanceof ModelField) {
+            schema[field] = descriptor.info;
+        }
+    }
+
+    const model = connector.makeModel(modelName, schema);
+    if (model.init) model.init();
+
+    Object.defineProperty(connector, modelName, { value: model, writable: false });
+    return model;
+}
+
+exports.makeModel = makeModel;
+
 function maintainConnector (connector, dbConfig) {
     connect(connector);
 
     const MODELS_BASE_PATH = Path.join(process.cwd(), 'models', dbConfig._name);
-    return new Proxy(connector, {
-        get (connector, /** @type {string} */ prop) {
-            if (prop in connector) return connector[prop];
+    for (const entry of readdirSync(MODELS_BASE_PATH)) {
+        if (!entry.endsWith('.js')) continue;
 
-            // Here `prop` is model name
-            const modelPath = Path.join(MODELS_BASE_PATH, prop + '.js');
-            if (!existsSync(modelPath)) {
-                log.warn(`Database model "${prop}" not found for "${dbConfig._name}" configuration`);
-                return;
-            }
-
-            try {
-                // todo: schema types
-                const schema = require(modelPath);
-                for (const field in schema) {
-                    const descriptor = schema[field];
-                    if (descriptor instanceof ModelField) {
-                        schema[field] = descriptor.info;
-                    }
-                }
-
-                return connector.getModel(MODELS_BASE_PATH, prop, schema);
-            } catch (error) {
-                log.error(`Cannot load "${prop}" model for "${dbConfig._name}" configuration`, error);
-            }
+        const modelName = entry.slice(0, -3);
+        const modelPath = Path.join(MODELS_BASE_PATH, entry);
+        if (!existsSync(modelPath)) {
+            log.warn(`Database model "${modelName}" not found for "${dbConfig._name}" configuration`);
+            return;
         }
-    });
+
+        try {
+            // todo: schema types
+            const schema = require(modelPath);
+            if (connector.makeModel) {
+                makeModel(connector, modelName, schema);
+            } else {
+                // todo! deprecate
+                const model = connector.getModel(modelName, schema);
+                Object.defineProperty(connector, modelName, { value: model, writable: false });
+            }
+
+        } catch (error) {
+            log.error(`Cannot load "${modelName}" model for "${dbConfig._name}" configuration`, error);
+            process.exit(-1);
+        }
+    }
+
+    return connector;
 }
 
 const connections = {};
 const drivers = {};
 exports.registerDriver = (DriverClass, driverName) => {
+    // todo: DRY
     for (const key in config.db) {
         if (key == driverName || key.startsWith(driverName + '.')) {
             const dbConfig = config.db[key];
@@ -115,7 +134,7 @@ exports.registerDriver = (DriverClass, driverName) => {
     return DriverClass;
 }
 
-exports.connect = (configKey, options) => {
+exports.connectDatabase = (configKey, options) => {
     const [driverName, connectionName] = configKey.split('.', 2);
     const DriverClass = drivers[driverName];
 
@@ -124,7 +143,7 @@ exports.connect = (configKey, options) => {
 }
 
 const { EventEmitter } = require('events');
-const { existsSync } = require('fs');
+const { existsSync, readdirSync } = require('fs');
 exports.DatabaseDriver = class DatabaseDriver extends EventEmitter {}
 
 class ModelField {
@@ -150,6 +169,11 @@ class ModelInt extends ModelField {
 }
 exports.int = () => new ModelInt();
 
+class ModelLong extends ModelField {
+    constructor () { super('long'); }
+}
+exports.long = () => new ModelLong();
+
 class ModelString extends ModelField {
     constructor (length) {
         super('string');
@@ -160,13 +184,13 @@ exports.string = length => new ModelString(length);
 
 class ModelText extends ModelField {
     constructor () { super('text'); }
-
-    get json () {
-        this.info.json = true;
-        return this;
-    }
 }
 exports.text = () => new ModelText();
+
+class ModelJson extends ModelField {
+    constructor () { super('json'); }
+}
+exports.json = () => new ModelJson();
 
 class ModelEnum extends ModelField {
     constructor (values) {

@@ -48,11 +48,15 @@ class HttpControllerContext extends ControllerBaseContext {
         if (this._res.aborted) return;
         this._res.aborted = true;
 
-        this._res.cork(() => {
+        this._res.cork(async () => {
             this._res.writeStatus(getResponseStatus(code));
             CORS.normal(this._req, this._res);
             for (const header in this._res.headers) {
                 this._res.writeHeader(header, this._res.headers[header]);
+            }
+
+            if (this._session) {
+                this._res.writeHeader('session', JSON.stringify(await this._session._init));
             }
 
             if (isPure) {

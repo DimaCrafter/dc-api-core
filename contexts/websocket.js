@@ -108,6 +108,15 @@ class SocketControllerContext extends ControllerBaseContext {
         connected.push(this);
     }
 
+    get session () {
+        var session = super.session;
+        if (this._session._init) {
+            this._session._init.then(token => this.emit('session', token));
+        }
+
+        return session;
+    }
+
     // emit(event, ...arguments);
     emit (...args) {
         if (this._req.isClosed) {
