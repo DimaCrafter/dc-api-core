@@ -43,22 +43,24 @@ exports.getActionCaller = (controller, actionFn) => {
 	};
 }
 
-exports.executeStartup = async () => {
-	if (config.plugins) {
-		for (const plugin of config.plugins) {
-			try {
-				if (plugin.startsWith('local:')) {
-					require(Path.join(ROOT, plugin.slice(6)));
-				} else {
-					require(plugin);
-				}
-			} catch (err) {
-				log.error(`Cannot load plugin "${plugin}"`, err);
-				process.exit(-1);
+exports.loadPlugins = () => {
+	if (!config.plugins) return;
+
+	for (const plugin of config.plugins) {
+		try {
+			if (plugin.startsWith('local:')) {
+				require(Path.join(ROOT, plugin.slice(6)));
+			} else {
+				require(plugin);
 			}
+		} catch (err) {
+			log.error(`Cannot load plugin "${plugin}"`, err);
+			process.exit(-1);
 		}
 	}
+}
 
+exports.executeStartup = async () => {
 	if (existsSync(STARTUP_PATH)) {
 		log.info('Running startup script');
 		try {

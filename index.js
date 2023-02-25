@@ -4,6 +4,7 @@ const config = require('./config');
 const log = require('./log');
 
 const ROOT = process.cwd();
+// todo: build app in separate file
 const app = (() => {
 	if (config.ssl) {
 		const opts = { ...config.ssl };
@@ -14,7 +15,8 @@ const app = (() => {
 		return uWS.App();
 	}
 })();
-
+const { loadPlugins } = require('./utils/loader');
+loadPlugins();
 
 const { camelToKebab } = require('./utils');
 const Router = require('./router');
