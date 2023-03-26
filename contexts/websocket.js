@@ -91,17 +91,18 @@ class SocketControllerContext extends ControllerBaseContext {
     async init (sessionHeader) {
         if (Session.enabled) {
             try {
+                // Throws session parsing errors
                 this._session = await Session.parse(sessionHeader);
-            } catch (err) {
+            } catch (error) {
                 emitError({
                     isSystem: true,
                     type: 'SessionError',
                     code: 500,
-                    message: err.message,
-                    error: err
+                    message: error.message,
+                    error
                 });
 
-                throw err;
+                throw error;
             }
         }
 
@@ -163,8 +164,8 @@ function registerSocketController (app, path, controller) {
 		async open (ws) {
 			try {
 				ws.dispatch = dispatch(ws, controller);
-			} catch (err) {
-				log.error('WebSocket request dispatch error', err);
+			} catch (error) {
+				log.error('WebSocket request dispatch error', error);
 			}
 		},
 		message (ws, msg, isBinary) { ws.dispatch.message(msg, isBinary); },
@@ -175,25 +176,27 @@ function registerSocketController (app, path, controller) {
 	});
 }
 
-function catchError (ctx, err) {
-    if (err instanceof HttpError) {
-        ctx.emit('error', err.message, err.code);
+function catchError (ctx, error) {
+    if (error instanceof HttpError) {
+        ctx.emit('error', error.message, error.code);
 
         emitError({
             isSystem: true,
             type: 'DispatchError',
-            ...err,
-            error: err
+            ...error,
+            error
         });
     } else {
-        ctx.emit('error', err.toString(), 500);
+        if (config.isDev) {
+            ctx.emit('error', error.toString(), 500);
+        }
 
         emitError({
             isSystem: true,
             type: 'DispatchError',
             code: 500,
-            message: err.message,
-            error: err
+            message: error.message,
+            error
         });
     }
 }
@@ -211,14 +214,14 @@ function dispatch (ws, controller) {
     const init = async session => {
         try {
             await ctx.init(session);
-        } catch (err) {
-            return ctx.emit('error', err.toString(), 500);
+        } catch (error) {
+            return ctx.emit('error', error.toString(), 500);
         }
 
         try {
             if (controller.open) await controller.open.call(ctx);
-        } catch (err) {
-            return catchError(ctx, err);
+        } catch (error) {
+            return catchError(ctx, error);
         }
 
         initProgress = undefined;
@@ -242,8 +245,8 @@ function dispatch (ws, controller) {
             if (parsed[0] in controller) {
                 controller[parsed[0]].apply(ctx, parsed.slice(1));
             }
-        } catch (err) {
-            return catchError(ctx, err);
+        } catch (error) {
+            return catchError(ctx, error);
         }
     }
 

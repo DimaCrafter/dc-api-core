@@ -25,16 +25,16 @@ class HttpControllerContext extends ControllerBaseContext {
         if (Session.enabled && this._req.headers.session) {
             try {
                 this._session = await Session.parse(JSON.parse(this._req.headers.session));
-            } catch (err) {
+            } catch (error) {
                 emitError({
                     isSystem: true,
                     type: 'SessionError',
                     code: 500,
-                    message: err.message,
-                    error: err
+                    message: error.message,
+                    error
                 });
 
-                throw err;
+                throw error;
             }
         }
     }
@@ -127,9 +127,10 @@ function registerHttpController (app, path, controller) {
 async function dispatch (req, res, handler) {
     const ctx = new HttpControllerContext(req, res);
     try {
+        // Throws session parsing errors
         await ctx.init();
-    } catch (err) {
-        return ctx.send(err.toString(), 500);
+    } catch (error) {
+        return ctx.send(error.toString(), 500);
     }
 
     try {
@@ -137,23 +138,28 @@ async function dispatch (req, res, handler) {
         if (!res.aborted && result !== undefined) {
             ctx.send(result);
         }
-    } catch (err) {
-        if (err instanceof HttpError) {
-            ctx.send(err.message, err.code);
+    } catch (error) {
+        if (error instanceof HttpError) {
+            ctx.send(error.message, error.code);
             emitError({
                 isSystem: true,
                 type: 'DispatchError',
-                ...err,
-                error: err
+                ...error,
+                error
             });
         } else {
-            ctx.send(err.toString(), 500);
+            if (config.isDev) {
+                ctx.send(error.toString(), 500);
+            } else {
+                ctx.send('InternalError', 500);
+            }
+
             emitError({
                 isSystem: true,
                 type: 'DispatchError',
                 code: 500,
-                message: err.message,
-                error: err
+                message: error.message,
+                error
             });
         }
     }

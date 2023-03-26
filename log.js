@@ -79,12 +79,12 @@ exports.text = text => process.stdout.write(text + '\n'),
 exports.info = text => print('INFO', text),
 exports.success = text => print('OK', text),
 exports.warn = text => print('WARN', text),
-exports.error = (text, err) => {
+exports.error = (text, error) => {
     print('ERR', text);
-    if (err) {
-        if (!(err instanceof Array)) err = splitError(err);
+    if (error) {
+        if (!(error instanceof Array)) error = splitError(error);
 
-        for (const line of err) {
+        for (const line of error) {
             process.stdout.write(` ${currentTheme.ERR_LINE}│${RESET} ${line}\n`);
         }
 

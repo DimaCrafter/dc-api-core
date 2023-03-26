@@ -18,7 +18,7 @@ exports.clearErrorStack = stack => {
 	return stack.replace(INTERNAL_REGEXP, '');
 };
 
-exports.splitError = err => {
+exports.splitError = error => {
 	// Error stack also includes message
-	return (err.stack ? exports.clearErrorStack(err.stack) : err.toString()).trim().split('\n');
+	return (error.stack ? exports.clearErrorStack(error.stack) : error.toString()).trim().split('\n');
 };

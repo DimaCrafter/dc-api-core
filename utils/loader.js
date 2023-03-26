@@ -53,8 +53,8 @@ exports.loadPlugins = () => {
 			} else {
 				require(plugin);
 			}
-		} catch (err) {
-			log.error(`Cannot load plugin "${plugin}"`, err);
+		} catch (error) {
+			log.error(`Cannot load plugin "${plugin}"`, error);
 			process.exit(-1);
 		}
 	}
@@ -72,8 +72,8 @@ exports.executeStartup = async () => {
 			if (startup instanceof Promise) {
 				await startup;
 			}
-		} catch (err) {
-			log.error('Startup script error', err);
+		} catch (error) {
+			log.error('Startup script error', error);
 			process.exit(-1);
 		}
 	}
