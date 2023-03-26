@@ -58,8 +58,8 @@ executeStartup().then(() => {
 					registerHttpController(app, '/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
 				}
 			}
-		} catch (err) {
-			log.error(`Loading "${controllerName}" controller failed`, err);
+		} catch (error) {
+			log.error(`Loading "${controllerName}" controller failed`, error);
 			process.exit(-1);
 		}
 	}
@@ -80,20 +80,6 @@ executeStartup().then(() => {
 			return route.target(ctx);
 		});
 	});
-
-	// Backward compatibility for Socket controller, will be removed soon
-	try {
-		const controller = getController('Socket');
-		if (!(controller instanceof SocketController)) {
-			registerSocketController(app, '/socket', controller);
-			log.warn('Deprecated usage of "Socket" controller without extending `SocketController`');
-		}
-	} catch (err) {
-		if (!err.message.includes('Cannot find module')) {
-			log.error('Loading "Socket" controller failed', err);
-			process.exit(-1);
-		}
-	}
 
 	// Listening port
 	app.listen(config.port, socket => {
