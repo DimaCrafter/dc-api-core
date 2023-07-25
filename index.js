@@ -15,24 +15,26 @@ const app = (() => {
 		return uWS.App();
 	}
 })();
-const { loadPlugins } = require('./utils/loader');
-loadPlugins();
 
+const { loadPlugins, getController, executeStartup } = require('./utils/loader');
+const { initSessions } = require('dc-api-core/session');
 const { camelToKebab } = require('./utils');
-const Router = require('./router');
-const { getController, executeStartup } = require('./utils/loader');
+const router = require('./router');
 const { prepareHttpConnection, fetchBody, abortRequest } = require('./utils/http');
-const CORS = require('./utils/cors');
+const cors = require('./utils/cors');
 
 const { SocketController, registerSocketController } = require('./contexts/websocket');
 exports.SocketController = SocketController;
 const { HttpController, registerHttpController, dispatchHttp } = require('./contexts/http');
 exports.HttpController = HttpController;
 
+loadPlugins();
+initSessions();
+
 executeStartup().then(() => {
 	// CORS preflight request
 	app.options('/*', (res, req) => {
-		CORS.preflight(req, res);
+		cors.preflight(req, res);
 		res.writeStatus('200 OK');
 		res.end();
 	});
@@ -67,7 +69,7 @@ executeStartup().then(() => {
 	// TODO: do smth with custom routes
 	app.any('/*', async (res, req) => {
 		prepareHttpConnection(req, res);
-		const route = Router.match(req.path);
+		const route = router.match(req.path);
 		if (!route) {
 			return abortRequest(res, 404, 'API endpoint not found');
 		}

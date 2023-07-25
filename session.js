@@ -4,27 +4,9 @@ const log = require('./log');
 const { connectDatabase, makeModel, json, long } = require('./db');
 
 const enabled = !!config.session;
+const stores = {};
 
-/** @type {import('./db').Model<{ id: any, data: any, expires: number }>} */
-let model;
-if (enabled) {
-    const db = connectDatabase(config.session.store);
-    model = makeModel(db, 'Session', {
-        data: json().required,
-        expires: long().required
-    });
-
-    let _initPromise;
-    if (model.init) _initPromise = model.init();
-
-    async function cleanup () {
-        await _initPromise;
-        await model.delete({ expires: { $lte: Date.now() - config.session.ttl } });
-    }
-
-    cleanup();
-    setInterval(() => cleanup, config.session.ttl / 3);
-}
+let store;
 
 function cryptSession (id) {
     let result = { id, expires: Date.now() + config.session.ttl };
@@ -58,7 +40,7 @@ function wrap (document) {
             data[key] = document[key];
         }
 
-        return await model.updateById(document.id || document._id, { data });
+        return await store.update(document.id || document._id, data);
     }
 
     document.destroy = async () => {
@@ -67,7 +49,7 @@ function wrap (document) {
             return log.error('Cannot destroy session, `id` or `_id` field not present');
         }
 
-        return await model.deleteById(document.id || document._id);
+        return await store.delete(document.id || document._id);
     };
 
     return document;
@@ -79,15 +61,14 @@ module.exports = {
     decodeSession,
     init () {
         const object = wrap({});
-        object._init = model.create({
-            data: {},
-            expires: Date.now() + config.session.ttl
-        }).then(document => {
-            object.id = document.id;
-            object._id = document._id;
-            delete object._init;
-            return cryptSession(document.id || document._id);
-        });
+        object._init = store
+            .create(Date.now() + config.session.ttl)
+            .then(document => {
+                object.id = document.id;
+                object._id = document._id;
+                delete object._init;
+                return cryptSession(document.id || document._id);
+            });
 
         return object;
     },
@@ -97,10 +78,7 @@ module.exports = {
         const parsed = decodeSession(header);
         if (!parsed) return;
 
-        let query = model.findById(parsed.id);
-        if (query.lean) query = query.lean();
-
-        let session = await query;
+        const session = await store.get(parsed.id);
         if (!session) return;
 
         const { data } = session;
@@ -108,5 +86,53 @@ module.exports = {
         delete session.data;
 
         return wrap(session);
+    },
+    registerStore (StoreClass, id) {
+        stores[id] = StoreClass;
+    },
+    // todo: rename init()
+    initSessions () {
+        if (enabled) {
+            const [storeName, configKey] = config.session.store.split('.', 2);
+            const StoreClass = stores[storeName];
+            if (StoreClass) {
+                store = new StoreClass(configKey);
+
+                async function cleanup () {
+                    await store.destroyExpired(Date.now() - config.session.ttl);
+                }
+
+                cleanup();
+                setInterval(cleanup, config.session.ttl / 3);
+            } else {
+                // todo: delete deprecated
+                log.warn('Using database instead of session store is deprecated');
+
+                const db = connectDatabase(config.session.store);
+                // todo: implement in dc-api-mysql
+                const model = makeModel(db, 'Session', {
+                    data: json().required,
+                    expires: long().required
+                });
+
+                let _initPromise;
+                if (model.init) _initPromise = model.init();
+
+                store = {
+                    create: expires => model.create({ data: {}, expires }),
+                    get: _id => model.findById(_id),
+                    save: (_id, data) => model.updateById(_id, { data }),
+                    destroy: _id => model.deleteById(_id)
+                };
+
+                async function cleanup () {
+                    await _initPromise;
+                    await model.delete({ expires: { $lte: Date.now() - config.session.ttl } });
+                }
+
+                cleanup();
+                setInterval(cleanup, config.session.ttl / 3);
+            }
+        }
     }
 };
