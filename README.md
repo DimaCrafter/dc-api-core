@@ -272,3 +272,5 @@ module.exports = Test;
 * [ ] Automatic package publication when all tests are passed
 * [ ] More functionality tests
 * [ ] Clusterization/multi-threading support
+* [ ] Edit pages "API" > "Database driver" and "Plugins" > "Basics" of docs
+* [ ] Repair CLI

@@ -55,7 +55,7 @@ class HttpControllerContext extends ControllerBaseContext {
                 this._res.writeHeader(header, this._res.headers[header]);
             }
 
-            if (this._session) {
+            if (this._session?._init) {
                 this._res.writeHeader('session', JSON.stringify(await this._session._init));
             }
 

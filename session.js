@@ -32,7 +32,7 @@ function wrap (document) {
 
         const data = {};
         for (const key in document) {
-            if (key == 'id' || key == '_id' || key == 'expires') continue;
+            if (key == 'id' || key == '_id' || key == 'expires' || key == '_init') continue;
 
             const value = document[key];
             if (typeof value == 'function') continue;
@@ -66,7 +66,6 @@ module.exports = {
             .then(document => {
                 object.id = document.id;
                 object._id = document._id;
-                delete object._init;
                 return cryptSession(document.id || document._id);
             });
 
