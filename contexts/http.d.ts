@@ -10,7 +10,7 @@ export class HttpController extends ControllerBase {
 	/** Drop the connection without responding to the request */
 	drop (): void;
 	/** Redirect user to specified URL */
-	redirect (url: string): void;
+	redirect (url: string, code?: number): void;
 	/**
 	 * Send response to client and close connection
 	 * @param data Payload to send

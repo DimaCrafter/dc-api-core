@@ -267,6 +267,8 @@ module.exports = Test;
 
 ## My TODOs
 
+* [ ] Document new `config.cors.headers`
+
 * [ ] Support for glibc < 2.18
 * [ ] Typing (`.d.ts`) files
 * [ ] Automatic package publication when all tests are passed

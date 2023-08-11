@@ -84,13 +84,17 @@ class HttpControllerContext extends ControllerBaseContext {
     /**
      * @param {import("uWebSockets.js").RecognizedString} url
      */
-    redirect (url) {
+    redirect (url, code = 302) {
         if (this._res.aborted) return;
         this._res.aborted = true;
 
-        this._res.writeStatus('302 Found');
-        this._res.writeHeader('Location', url);
-        this._res.end();
+        this._res.cork(async () => {
+            this._res.writeStatus(getResponseStatus(code));
+            CORS.normal(this._req, this._res);
+            this._res.writeHeader('Location', url);
+            this._res.writeHeader('Content-Type', 'text/plain');
+            this._res.end();
+        });
     }
 }
 

@@ -4,6 +4,26 @@ const { parseIPv6Part } = require('../utils/parsers');
 
 class ControllerBase {}
 
+function isIpProxied (value, isV4) {
+    if (isV4) {
+        // Loopback, local subnets
+        if (value.startsWith('127.') || value.startsWith('192.168.') || value.startsWith('10.')) {
+            return true;
+        }
+
+        // RFC 1918: Private network
+        if (value.startsWith('172.')) {
+            const secondPart = +value.slice(4, value.indexOf('.', 4));
+            return secondPart >= 16 && secondPart < 32;
+        }
+
+        return false;
+    } else {
+        // Loopback and Unique Local Address
+        return value == ':::::::0001' || value.startsWith('fd');
+    }
+}
+
 class ControllerBaseContext {
     constructor (req, res) {
         this._req = req;
@@ -63,14 +83,8 @@ class ControllerBaseContext {
             }
         }
 
-        const isProxied = isV4
-            // Loopback, docker and local subnets
-            ? (value.startsWith('127.') || value.startsWith('172.18.') || value.startsWith('192.168.') || value.startsWith('10.'))
-            // Loopback and Unique Local Address
-            : value == ':::::::0001' || value.startsWith('fd');
-
         let result;
-        if (isProxied) {
+        if (isIpProxied(value, isV4)) {
             const realValue = this._req.headers['x-real-ip'];
             if (realValue) {
                 result = {
