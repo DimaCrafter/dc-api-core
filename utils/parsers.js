@@ -3,9 +3,9 @@ const { getParts } = require('uWebSockets.js');
 function parseQueryString (query) {
 	const result = {};
 	for (const [key, value] of new URLSearchParams(query)) {
-		if (value === '' || value == '1' || value == 'true' || value == 'yes') {
+		if (value === '' || value == 'true' || value == 'yes') {
 			result[key] = true;
-		} else if (value == '0' || value == 'false' || value == 'no') {
+		} else if (value == 'false' || value == 'no') {
 			result[key] = false;
 		} else {
 			result[key] = value;

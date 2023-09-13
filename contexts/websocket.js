@@ -82,7 +82,7 @@ class SocketControllerContext extends ControllerBaseContext {
 
     _destroy () {
         const i = connected.indexOf(this);
-        if (~i) connected.splice(i, 1);
+        if (i != -1) connected.splice(i, 1);
     }
 
     /**
@@ -112,7 +112,10 @@ class SocketControllerContext extends ControllerBaseContext {
     get session () {
         var session = super.session;
         if (this._session._init) {
-            this._session._init.then(token => this.emit('session', token));
+            this._session._init.then(token => {
+                if (this._req.isClosed) return;
+                this.emit('session', token);
+            });
         }
 
         return session;
@@ -206,7 +209,7 @@ const WS_SYSTEM_EVENTS = ['open', 'close', 'error'];
  * @param {import('./websocket').SocketController} controller
  */
 function dispatch (ws, controller) {
-    let obj = {};
+    const obj = {};
     const ctx = new SocketControllerContext(ws);
     ctx.controller = controller;
 
@@ -250,32 +253,32 @@ function dispatch (ws, controller) {
         }
     }
 
-    obj.close = async (code, msg) => {
-        // 0 - Clear close
+    obj.close = async (code, message) => {
+        // @ts-ignore
+        ctx._destroy();
+        if (controller.close) controller.close.call(ctx);
+
+        // 0 or 1000 - Clear close
         // 1001 - Page closed
+        // 1005 - Expected close status, received none
         // 1006 & !message - Browser ended connection with no close frame.
         //                   In most cases it means "normal" close when page reloaded or browser closed
-        if (code != 0 && code != 1000 && code != 1001 && (code != 1006 || msg)) {
-            msg = Buffer.from(msg).toString();
-            if (ctx) {
-                if (controller.error) {
-                    await controller.error.call(ctx, [code, msg]);
-                } else {
-                    log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${msg}`);
-                    emitError({
-                        isSystem: true,
-                        type: 'SocketUnhandledError',
-                        code,
-                        message: msg
-                    });
-                }
-            }
+        if (code == 0 || code == 1000 || code == 1001 || (code == 1005 || code == 1006) && message.byteLength == 0) {
+            return;
         }
 
-        if (ctx) {
-            // @ts-ignore
-            ctx._destroy();
-            if (controller.close) controller.close.call(ctx);
+        message = Buffer.from(message).toString();
+
+        if (controller.error) {
+            await controller.error.call(ctx, code, message);
+        } else {
+            log.error('Unhandled socket error', `WebSocket disconnected with code ${code}\nDriver message: ${message}`);
+            emitError({
+                isSystem: true,
+                type: 'SocketUnhandledError',
+                code,
+                message
+            });
         }
     }
 

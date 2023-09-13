@@ -101,8 +101,10 @@ module.exports = {
                     await store.destroyExpired(Date.now() - config.session.ttl);
                 }
 
-                cleanup();
-                setInterval(cleanup, config.session.ttl / 3);
+                if (config.session.ttl !== false) {
+                    cleanup();
+                    setInterval(cleanup, config.session.ttl / 3);
+                }
             } else {
                 // todo: delete deprecated
                 log.warn('Using database instead of session store is deprecated');
@@ -129,8 +131,10 @@ module.exports = {
                     await model.delete({ expires: { $lte: Date.now() - config.session.ttl } });
                 }
 
-                cleanup();
-                setInterval(cleanup, config.session.ttl / 3);
+                if (config.session.ttl !== false) {
+                    cleanup();
+                    setInterval(cleanup, config.session.ttl / 3);
+                }
             }
         }
     }

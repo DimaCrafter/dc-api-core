@@ -64,34 +64,34 @@ Options:
 
 ## `config.json`
 
-| Field                 | Default             | Description                                  |
-|-----------------------|---------------------|----------------------------------------------|
-| `db`                  | Optional            | Object                                       |
-| `db[driverName]`      |                     | Code of [database driver](#db-module)        |
-| `db[driverName].name` | Required            | Database name                                |
-| `db[driverName].port` | Defined by plugin   | Database port                                |
-| `db[driverName].user` | Optional            | Database username                            |
-| `db[driverName].pass` |                     | and password                                 |
-| `db[driverName].srv`  | Optional for mongo  | Boolean, `true` - use `srv`                  |
-|                       |                     |                                              |
-| `session.secret`      | Required            | Private string for cookie                    |
-| `session.store`       | Required            | Database config name                         |
-| `session.ttl`         | `3d` (3 days)       | Session lifetime in [vercel/ms] format       |
-|                       |                     |                                              |
-| `ssl`                 | Optional            | Enables HTTPS mode if filled                 |
-| `ssl.*`               | Optional            | Any `μWS.SSLApp` options field               |
-| `ssl.key`             | Required            | Local path to private key                    |
-| `ssl.cert`            | Required            | Local path to certificate file               |
-|                       |                     |                                              |
-| `plugins`             | `[]`                | Array of plugin packages names               |
-| `origin`              | `Origin` header     | Accept requests only from this origin        |
-| `port`                | `8081`              | API listing port                             |
-| `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds |
-|                       |                     |                                              |
-| `ignore`              | `[]`                | Excluded directories in development mode     |
-| `isDev`               | Read-only           | `true` if using `--dev` argument             |
-| `dev`                 | `{}`                | Config to merge if `isDev` is `true`         |
-| `ttl`                 | `0`                 | WebSocket TTL in seconds, `0` - disabled     |
+| Field                 | Default             | Description                                                |
+|-----------------------|---------------------|------------------------------------------------------------|
+| `db`                  | Optional            | Object                                                     |
+| `db[driverName]`      |                     | Code of [database driver](#db-module)                      |
+| `db[driverName].name` | Required            | Database name                                              |
+| `db[driverName].port` | Defined by plugin   | Database port                                              |
+| `db[driverName].user` | Optional            | Database username                                          |
+| `db[driverName].pass` |                     | and password                                               |
+| `db[driverName].srv`  | Optional for mongo  | Boolean, `true` - use `srv`                                |
+|                       |                     |                                                            |
+| `session.secret`      | Required            | Private string for cookie                                  |
+| `session.store`       | Required            | Database config name                                       |
+| `session.ttl`         | `3d` (3 days)       | Session lifetime in [vercel/ms] format, `false` - infinite |
+|                       |                     |                                                            |
+| `ssl`                 | Optional            | Enables HTTPS mode if filled                               |
+| `ssl.*`               | Optional            | Any `μWS.SSLApp` options field                             |
+| `ssl.key`             | Required            | Local path to private key                                  |
+| `ssl.cert`            | Required            | Local path to certificate file                             |
+|                       |                     |                                                            |
+| `plugins`             | `[]`                | Array of plugin packages names                             |
+| `origin`              | `Origin` header     | Accept requests only from this origin                      |
+| `port`                | `8081`              | API listing port                                           |
+| `ws_timeout`          | `60`                | WebSocket request waiting timeout in seconds               |
+|                       |                     |                                                            |
+| `ignore`              | `[]`                | Excluded directories in development mode                   |
+| `isDev`               | Read-only           | `true` if using `--dev` argument                           |
+| `dev`                 | `{}`                | Config to merge if `isDev` is `true`                       |
+| `ttl`                 | `0`                 | WebSocket TTL in seconds, `0` - disabled                   |
 
 [vercel/ms]: https://github.com/vercel/ms
 
