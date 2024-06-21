@@ -20,6 +20,7 @@ exports.getController = name => {
 }
 
 exports.registerController = (name, ControllerClass) => {
+	if (typeof ControllerClass === 'object' && ControllerClass.default) ControllerClass = ControllerClass.default;
 	if (typeof ControllerClass != 'function') {
 		throw new Error(`Exported value from ${name} controller isn't a class`);
 	}
