@@ -1,9 +1,8 @@
-const { readdirSync, existsSync } = require('fs');
 const config = require('./config');
 const log = require('./log');
 const app = require('./app');
 
-const { loadPlugins, getController, executeStartup } = require('./utils/loader');
+const { loadPlugins, getController, executeStartup, iterControllers } = require('./utils/loader');
 const { initSessions } = require('./session');
 const { camelToKebab } = require('./utils');
 const router = require('./router');
@@ -15,7 +14,6 @@ const { HttpController, registerHttpController, dispatchHttp } = require('./cont
 exports.HttpController = HttpController;
 
 
-const ROOT = process.cwd();
 loadPlugins();
 
 if (config.typescript) {
@@ -26,26 +24,15 @@ if (config.typescript) {
 initSessions();
 
 executeStartup().then(() => {
-	let controllersDirContents;
-	if (existsSync(ROOT + '/controllers')) {
-		controllersDirContents = readdirSync(ROOT + '/controllers');
-	} else {
-		controllersDirContents = [];
-		log.warn('No "controllers" directory');
-	}
-
 	// Preloading controllers
-	for (let controllerName of controllersDirContents) {
+	for (let { name: controllerName } of iterControllers()) {
 		try {
-			if (controllerName.endsWith('.js') || config.typescript && controllerName.endsWith('.ts')) {
-				controllerName = controllerName.slice(0, -3);
-				const controller = getController(controllerName);
+			const controller = getController(controllerName);
 
-				if (controller instanceof SocketController) {
-					registerSocketController('/' + camelToKebab(controllerName), controller);
-				} else {
-					registerHttpController('/' + (config.supportOldCase ? controllerName : camelToKebab(controllerName)), controller);
-				}
+			if (controller instanceof SocketController) {
+				registerSocketController('/' + camelToKebab(controllerName), controller);
+			} else {
+				registerHttpController('/' + camelToKebab(controllerName), controller);
 			}
 		} catch (error) {
 			log.error(`Loading "${controllerName}" controller failed`, error);

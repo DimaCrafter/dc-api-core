@@ -6,11 +6,12 @@
 
 const log = require('./log');
 const config = require('./config');
+const { getFlag } = require('./utils');
 
-
-const ROOT = process.cwd();
 
 if (config.isDev) {
+    const ROOT = process.cwd();
+
     /** @type {ChildProcessByStdio<null, Readable, null>} */
     let core;
 
@@ -96,6 +97,13 @@ if (config.isDev) {
         stopCore();
         process.exit();
     });
+} else if (getFlag('--ts-build')) {
+    if (!config.typescript) {
+        log.warn('Typescript is not enabled');
+        process.exit();
+    }
+
+    require('./typescript/build');
 } else {
     require('.');
 }

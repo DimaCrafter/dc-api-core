@@ -42,42 +42,58 @@ function makeModel (connector, modelName, schema) {
 
 exports.makeModel = makeModel;
 
-function maintainConnector (connector, dbConfig) {
-    connect(connector);
+function loadModel (connector, modelName, schema) {
+    if ('default' in schema) {
+        schema = schema.default;
+    }
 
-    const types = new DbTypesGenerator(connector);
+    if (connector.makeModel) {
+        makeModel(connector, modelName, schema);
+    } else {
+        // todo? deprecate
+        const model = connector.getModel(modelName, schema);
+        Object.defineProperty(connector, modelName, { value: model, writable: false });
+    }
+}
 
-    const MODELS_BASE_PATH = Path.join(process.cwd(), 'models', dbConfig._name);
+// #paste :modelsMap
+
+function* iterModels (dbConfigName) {
+    // #region :iterModels
+    const MODELS_BASE_PATH = Path.join(process.cwd(), 'models', dbConfigName);
     for (const entry of readdirSync(MODELS_BASE_PATH)) {
         if (!entry.endsWith('.js')) continue;
 
-        const modelName = entry.slice(0, -3);
-        const modelPath = Path.join(MODELS_BASE_PATH, entry);
-        if (!existsSync(modelPath)) {
-            log.warn(`Database model "${modelName}" not found for "${dbConfig._name}" configuration`);
+        const name = entry.slice(0, -3);
+        const path = Path.join(MODELS_BASE_PATH, entry);
+        if (!existsSync(path)) {
+            log.warn(`Database model "${name}" not found for "${dbConfigName}" configuration`);
             return;
         }
 
+        yield { name, path };
+    }
+    // #endregion
+}
+
+function maintainConnector (connector, dbConfig) {
+    if (getFlag('--ts-build')) {
+        return connector;
+    }
+
+    connect(connector);
+    const types = new DbTypesGenerator(connector);
+
+    for (const { name, path, schema } of iterModels(dbConfig._name)) {
         try {
             // todo: schema types
-            let schema = require(modelPath);
-            if ('default' in schema) {
-                schema = schema.default;
-            }
-
-            if (connector.makeModel) {
-                makeModel(connector, modelName, schema);
-            } else {
-                // todo! deprecate
-                const model = connector.getModel(modelName, schema);
-                Object.defineProperty(connector, modelName, { value: model, writable: false });
-            }
+            loadModel(connector, name, schema || require(path));
         } catch (error) {
-            log.error(`Cannot load "${modelName}" model for "${dbConfig._name}" configuration`, error);
+            log.error(`Cannot load "${name}" model for "${dbConfig._name}" configuration`, error);
             process.exit(-1);
         }
 
-        types.add(modelName, connector[modelName]);
+        types.add(name, connector[name]);
     }
 
     types.write(dbConfig._name);
@@ -154,6 +170,7 @@ exports.connectDatabase = (configKey, options) => {
 
 const { EventEmitter } = require('events');
 const { existsSync, readdirSync } = require('fs');
+const { getFlag } = require('./utils');
 exports.DatabaseDriver = class DatabaseDriver extends EventEmitter {}
 
 class ModelField {

@@ -1,4 +1,3 @@
 {
-	"port": 6080,
-	"supportOldCase": true
+	"port": 6080
 }

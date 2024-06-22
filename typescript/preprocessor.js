@@ -1,7 +1,29 @@
 const ts = require('typescript');
+const fs = require('fs');
 
 
-class Transformer {
+const VALIDATOR_USAGE_REGEX = /(Data|Query)<(.+?)>/g;
+
+class Preprocessor {
+	static attachHooks () {
+		const __readFileSync = fs.readFileSync;
+		fs.readFileSync = function (path, encoding) {
+			let result = __readFileSync.call(this, path, encoding);
+			if (path.includes('controllers')) {
+				const usages = [];
+
+				let match;
+				while (match = VALIDATOR_USAGE_REGEX.exec(result)) {
+					usages.push(match[2]);
+				}
+
+				result += `\n\n(<any> global).fakeUsage?.(${usages.join(', ')});`;
+			}
+
+			return result;
+		}
+	}
+
 	/**
 	 * @param {ts.TransformationContext} ctx
 	 * @param {ts.SourceFile} sourceFile
@@ -139,4 +161,4 @@ class Transformer {
 	}
 }
 
-module.exports = Transformer;
+module.exports = Preprocessor;

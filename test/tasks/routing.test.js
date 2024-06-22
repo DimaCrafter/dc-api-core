@@ -6,7 +6,6 @@ test('404 error', async () => {
 
 test('URI cases', async () => {
 	await testJSON('/test-endpoint/ping', 200, 'pong');
-	await testJSON('/TestEndpoint/ping', 200, 'pong');
 });
 
 test('Custom route', async () => {

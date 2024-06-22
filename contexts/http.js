@@ -119,7 +119,7 @@ class HttpControllerContext extends ControllerBaseContext {
 }
 
 function registerHttpController (path, controller) {
-	for (const action of Object.getOwnPropertyNames(controller.__proto__)) {
+	for (const action of Object.getOwnPropertyNames(controller.constructor.prototype)) {
 		if (action[0] == '_' || action == 'onLoad' || action == 'constructor') {
 			continue;
 		}
@@ -139,12 +139,6 @@ function registerHttpController (path, controller) {
 		// TODO: get request method through vanilla decorators
 		app.get(routePath, requestHandler);
 		app.post(routePath, requestHandler);
-
-		if (config.supportOldCase) {
-			const routePath = path + '/' + action;
-			app.get(routePath, requestHandler);
-			app.post(routePath, requestHandler);
-		}
 	}
 }
 

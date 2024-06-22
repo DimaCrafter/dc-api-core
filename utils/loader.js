@@ -1,4 +1,4 @@
-const { existsSync } = require('fs');
+const { existsSync, readdirSync } = require('fs');
 const Path = require('path');
 const log = require('../log');
 const config = require('../config');
@@ -28,6 +28,23 @@ exports.getController = name => {
 	}
 
 	return module.exports.registerController(name, require(path));
+}
+
+exports.iterControllers = function* () {
+	const basePath = Path.join(ROOT, 'controllers');
+	if (!existsSync(basePath)) {
+		log.warn('No "controllers" directory');
+		return;
+	}
+
+	for (let filename of readdirSync(basePath)) {
+		if (filename.endsWith('.js') || config.typescript && filename.endsWith('.ts')) {
+			yield {
+				name: filename.slice(0, -3),
+				path: Path.join(basePath, filename),
+			};
+		}
+	}
 }
 
 exports.registerController = (name, ControllerClass) => {
@@ -81,6 +98,7 @@ let onPluginsLoaded;
 exports.pluginLoadEnd = new Promise(resolve => onPluginsLoaded = resolve);
 
 exports.loadPlugins = () => {
+	// #region :loadPlugins
 	for (const { plugin, path } of iterPlugins()) {
 		try {
 			require(path);
@@ -90,6 +108,7 @@ exports.loadPlugins = () => {
 			process.exit(-1);
 		}
 	}
+	// #endregion
 
 	onPluginsLoaded();
 }
@@ -102,22 +121,36 @@ exports.findPluginDirectory = mainEntry => {
 	}
 }
 
-exports.executeStartup = async () => {
+exports.locateStartupScript = () => {
+	// #region :startupLocate
 	let path = Path.join(ROOT, 'startup.js');
-	let exists = existsSync(path);
-
-	if (!exists && config.typescript) {
-		path = Path.join(ROOT, 'startup.ts');
-		exists = existsSync(path);
+	if (existsSync(path)) {
+		return path;
 	}
 
-	if (!exists) {
+	if (config.typescript) {
+		path = Path.join(ROOT, 'startup.ts');
+		if (existsSync(path)) {
+			return path;
+		}
+	}
+
+	return null;
+	// #endregion
+};
+
+exports.executeStartup = async () => {
+	const path = exports.locateStartupScript();
+	if (!path) {
 		return;
 	}
 
 	log.info('Running startup script');
 	try {
+		// #region :startupLoad
 		let startup = require(path);
+		// #endregion
+
 		if (typeof startup == 'function') {
 			startup = startup();
 		}
