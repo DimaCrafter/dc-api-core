@@ -42,4 +42,8 @@ function getFlag (name) {
     return process.argv.includes(name);
 }
 
-module.exports = { camelToKebab, mergeObj, getArg, getFlag };
+function sleep (duration, value) {
+    return new Promise(resolve => setTimeout(resolve, duration, value));
+}
+
+module.exports = { camelToKebab, mergeObj, getArg, getFlag, sleep };

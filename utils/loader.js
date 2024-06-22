@@ -4,7 +4,6 @@ const log = require('../log');
 const config = require('../config');
 
 const ROOT = process.cwd();
-const STARTUP_PATH = Path.join(ROOT, 'startup.js');
 
 const controllers = {};
 /**
@@ -16,14 +15,33 @@ exports.getController = name => {
 		return controllers[name];
 	}
 
-	return module.exports.registerController(name, require(Path.join(ROOT, 'controllers', name + '.js')));
+	let path = Path.join(ROOT, 'controllers', name + '.js');
+	let exists = existsSync(path);
+
+	if (!exists && config.typescript) {
+		path = Path.join(ROOT, 'controllers', name + '.ts');
+		exists = existsSync(path);
+	}
+
+	if (!exists) {
+		throw `Controller "${name}" at "${Path.dirname(path)}" not found`;
+	}
+
+	return module.exports.registerController(name, require(path));
 }
 
 exports.registerController = (name, ControllerClass) => {
-	if (typeof ControllerClass === 'object' && ControllerClass.default) {
-		ControllerClass = ControllerClass.default;
+	if (typeof ControllerClass === 'object') {
+		if (ControllerClass.default) {
+			// export default class ...
+			ControllerClass = ControllerClass.default;
+		} else if (name in ControllerClass) {
+			// export class ...
+			ControllerClass = ControllerClass[name];
+		}
 	}
 
+	// module.exports = class ...
 	if (typeof ControllerClass != 'function') {
 		throw new Error(`Exported value from ${name} controller isn't a class`);
 	}
@@ -47,38 +65,68 @@ exports.getActionCaller = (controller, actionFn) => {
 	};
 }
 
-exports.loadPlugins = () => {
+function* iterPlugins () {
 	if (!config.plugins) return;
 
 	for (const plugin of config.plugins) {
+		if (plugin.startsWith('local:')) {
+			yield { plugin, path: require.resolve(Path.join(ROOT, plugin.slice(6))) };
+		} else {
+			yield { plugin, path: require.resolve(plugin) };
+		}
+	}
+}
+
+let onPluginsLoaded;
+exports.pluginLoadEnd = new Promise(resolve => onPluginsLoaded = resolve);
+
+exports.loadPlugins = () => {
+	for (const { plugin, path } of iterPlugins()) {
 		try {
-			if (plugin.startsWith('local:')) {
-				require(Path.join(ROOT, plugin.slice(6)));
-			} else {
-				require(plugin);
-			}
+			require(path);
+			log.success(`Plugin "${plugin}" loaded`);
 		} catch (error) {
 			log.error(`Cannot load plugin "${plugin}"`, error);
 			process.exit(-1);
 		}
 	}
+
+	onPluginsLoaded();
+}
+
+exports.findPluginDirectory = mainEntry => {
+	for (const { path } of iterPlugins()) {
+		if (require(path) == mainEntry) {
+			return Path.dirname(path);
+		}
+	}
 }
 
 exports.executeStartup = async () => {
-	if (existsSync(STARTUP_PATH)) {
-		log.info('Running startup script');
-		try {
-			let startup = require(STARTUP_PATH);
-			if (typeof startup == 'function') {
-				startup = startup();
-			}
+	let path = Path.join(ROOT, 'startup.js');
+	let exists = existsSync(path);
 
-			if (startup instanceof Promise) {
-				await startup;
-			}
-		} catch (error) {
-			log.error('Startup script error', error);
-			process.exit(-1);
+	if (!exists && config.typescript) {
+		path = Path.join(ROOT, 'startup.ts');
+		exists = existsSync(path);
+	}
+
+	if (!exists) {
+		return;
+	}
+
+	log.info('Running startup script');
+	try {
+		let startup = require(path);
+		if (typeof startup == 'function') {
+			startup = startup();
 		}
+
+		if (startup instanceof Promise) {
+			await startup;
+		}
+	} catch (error) {
+		log.error('Startup script error', error);
+		process.exit(-1);
 	}
 }

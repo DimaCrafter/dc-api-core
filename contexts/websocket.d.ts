@@ -1,4 +1,4 @@
-import { TemplatedApp, WebSocket } from 'uWebSockets.js'
+import { WebSocket } from 'uWebSockets.js'
 import { ControllerBase, ControllerBaseContext } from './base'
 
 /**
@@ -41,7 +41,7 @@ export class SocketController extends ControllerBase {
 	 */
 	unsubscribe (channel: string): void;
 	/**
-	 * Emits event for all conecctions that have subscription on specified channel.
+	 * Emits event for all connections that have subscription on specified channel.
 	 * If channel name is null, event will be emitted for all active WebSocket connections.
 	 * @param channel Channel name
 	 * @param event Event name
@@ -58,8 +58,8 @@ export class SocketController extends ControllerBase {
 
 type Socket = WebSocket & {
 	isClosed: boolean,
-	send (msg: stirng): void;
-	end (code: number, msg: stirng): void;
+	send (msg: string): void;
+	end (code: number, msg: string): void;
 };
 
 export class SocketControllerContext extends ControllerBaseContext<Socket, Socket> {
@@ -75,7 +75,7 @@ export class SocketControllerContext extends ControllerBaseContext<Socket, Socke
     broadcast (channel: string, ...args: any[]): void;
 }
 
-export function registerSocketController (app: TemplatedApp, path: stirng, controller: SocketController): void;
+export function registerSocketController (path: string, controller: SocketController): void;
 
 /**
  * Send event with payload to first matched socket
@@ -85,7 +85,7 @@ export function registerSocketController (app: TemplatedApp, path: stirng, contr
  */
 export function emitFirst (filter: (socket: SocketControllerContext) => boolean, event: string, ...args: any[]): void;
 /**
- * Emits event for all conecctions that have subscription on specified channel.
+ * Emits event for all connections that have subscription on specified channel.
  * If channel name is null, event will be emitted for all active WebSocket connections.
  * @param channel Channel name
  * @param event Event name

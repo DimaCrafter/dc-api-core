@@ -67,8 +67,7 @@ async function fetchBody (req, res) {
 			type: 'RequestError',
 			code: 400,
 			url: req.path,
-			message: 'Content-Type not supported',
-			value: contentType
+			message: `Content-Type "${contentType}" not supported`
 		});
 
 		return abortRequest(res, 400, 'Content-Type not supported');

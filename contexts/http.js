@@ -4,8 +4,10 @@ const { emitError, HttpError } = require('../errors');
 const Session = require('../session');
 const CORS = require('../utils/cors');
 const config = require('../config');
+const ValidationError = require('../typescript/ValidationError');
 const { camelToKebab } = require('../utils');
 const { getActionCaller } = require('../utils/loader');
+const app = require('../app');
 
 class HttpController extends ControllerBase {}
 
@@ -96,9 +98,27 @@ class HttpControllerContext extends ControllerBaseContext {
             this._res.end();
         });
     }
+
+    // todo: inline
+    // todo: add difference between "Data" and "Query" for ValidationError
+    __validateData (TypeClass) {
+        if (!this.data) {
+            throw new ValidationError('Payload required');
+        }
+
+        return new TypeClass(this.data).validate();
+    }
+
+    __validateQuery (TypeClass) {
+        if (!this.query) {
+            throw new ValidationError('Query required');
+        }
+
+        return new TypeClass(this.query).validate();
+    }
 }
 
-function registerHttpController (app, path, controller) {
+function registerHttpController (path, controller) {
 	for (const action of Object.getOwnPropertyNames(controller.__proto__)) {
 		if (action[0] == '_' || action == 'onLoad' || action == 'constructor') {
 			continue;
@@ -148,7 +168,8 @@ async function dispatch (req, res, handler) {
             emitError({
                 isSystem: true,
                 type: 'DispatchError',
-                ...error,
+                message: error.message,
+                code: error.code,
                 error
             });
         } else {

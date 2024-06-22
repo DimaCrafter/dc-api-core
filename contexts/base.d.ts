@@ -16,7 +16,7 @@ export class ControllerBase {
 	}
 
 	/** Parsed query string */
-	query?: { [param: string]: string };
+	query: Record<string, string>;
 	/** Get request header */
 	header (name: string): string;
 	/** Set response header value */

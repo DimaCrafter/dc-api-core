@@ -1,19 +1,25 @@
 {
 	"name": "dc-api-core",
-	"version": "0.3.6-2",
+	"version": "0.4.0",
 	"description": "Simple API core for your projects",
-
 	"author": "DimaCrafter",
 	"homepage": "https://github.com/DimaCrafter/dc-api-core",
 	"bugs": "https://github.com/DimaCrafter/dc-api-core/issues",
 	"repository": "github.com:DimaCrafter/dc-api-core",
-
 	"license": "MIT",
 	"bin": "cli.js",
+	"types": "index.d.ts",
 	"dependencies": {
-		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.3.0",
 		"jwa": "^2.0.0",
 		"ms": "^2.1.2",
+		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.3.0",
 		"watch": "^1.0.2"
+	},
+	"peerDependencies": {
+		"ts-node": "^10.9.2",
+		"typescript": "^5.5.2"
+	},
+	"devDependencies": {
+		"@types/node": "^20.14.8"
 	}
 }

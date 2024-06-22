@@ -4,6 +4,7 @@ const { emitError, HttpError } = require('../errors');
 const config = require('../config');
 const log = require('../log');
 const Session = require('../session');
+const app = require('../app');
 
 class SocketController extends ControllerBase {}
 
@@ -144,11 +145,10 @@ class SocketControllerContext extends ControllerBaseContext {
 }
 
 /**
- * @param {import('uWebSockets.js').TemplatedApp} app
  * @param {string} path
  * @param {import('./websocket').SocketController} controller
  */
-function registerSocketController (app, path, controller) {
+function registerSocketController (path, controller) {
 	app.ws(path, {
 		maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
 		idleTimeout: config.ttl || 0,

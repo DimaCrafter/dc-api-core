@@ -12,7 +12,6 @@ interface DatabaseDriverStatic<DriverType> {
 	new (options: ConnectionOptions): DriverType;
 }
 
-type a = Record<>;
 type FindQuery<Doc> = {
 	[Key in keyof Doc]?: Doc[Key] | FindQueryOp<Doc[Key]>;
 }

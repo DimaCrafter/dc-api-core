@@ -2,6 +2,7 @@ const Path = require('path');
 const { emitError } = require('./errors');
 const config = require('./config');
 const log = require('./log');
+const DbTypesGenerator = require('./typescript/db-typings');
 
 async function connect (connector, attempt = 0) {
     try {
@@ -44,6 +45,8 @@ exports.makeModel = makeModel;
 function maintainConnector (connector, dbConfig) {
     connect(connector);
 
+    const types = new DbTypesGenerator(connector);
+
     const MODELS_BASE_PATH = Path.join(process.cwd(), 'models', dbConfig._name);
     for (const entry of readdirSync(MODELS_BASE_PATH)) {
         if (!entry.endsWith('.js')) continue;
@@ -57,7 +60,11 @@ function maintainConnector (connector, dbConfig) {
 
         try {
             // todo: schema types
-            const schema = require(modelPath);
+            let schema = require(modelPath);
+            if ('default' in schema) {
+                schema = schema.default;
+            }
+
             if (connector.makeModel) {
                 makeModel(connector, modelName, schema);
             } else {
@@ -65,12 +72,15 @@ function maintainConnector (connector, dbConfig) {
                 const model = connector.getModel(modelName, schema);
                 Object.defineProperty(connector, modelName, { value: model, writable: false });
             }
-
         } catch (error) {
             log.error(`Cannot load "${modelName}" model for "${dbConfig._name}" configuration`, error);
             process.exit(-1);
         }
+
+        types.add(modelName, connector[modelName]);
     }
+
+    types.write(dbConfig._name);
 
     return connector;
 }

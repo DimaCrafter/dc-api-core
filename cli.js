@@ -1,115 +1,99 @@
 #!/usr/bin/env node
-const ROOT = process.cwd();
+/**
+ * @import { ChildProcessByStdio } from 'child_process'
+ * @import { Readable } from 'stream'
+ */
+
 const log = require('./log');
-if (process.argv[2] == 'init') {
-    const fs = require('fs');
-
-    if (!fs.existsSync(ROOT + '/package.json')) {
-        log.error('Package not initialized, run `npm init` or `yarn init` first');
-        process.exit();
-    }
-
-    if (!fs.existsSync(ROOT + '/controllers')) {
-        fs.mkdirSync(ROOT + '/controllers');
-    }
-
-    if (!fs.existsSync(ROOT + '/controllers/Info.js')) {
-        log.info('Creating example controller...');
-        fs.writeFileSync(ROOT + '/controllers/Info.js', `
-// Importing \`package.json\` from installed \`dc-api-core\` package
-const pkg = require('dc-api-core/package');
-
-// Importing value from configuration
-const { something_configurable } = require('dc-api-core/config');
-
-// Exporting controller's class
-module.exports = class Info {
-    // Declaring a handler method that will accept requests
-    // on URL http://localhost:8081/Info/status
-    status () {
-        // Sends an object with installed \`dc-api-core\` version
-        // and current server time in response
-        return {
-            version: pkg.version,
-            time: new Date().toLocaleString(),
-            something_configurable
-        };
-    }
-}
-        `.trim() + '\n');
-    }
-
-    if (!fs.existsSync(ROOT + '/config.json')) {
-        log.info('Creating example configuration file...');
-        fs.writeFileSync(ROOT + '/config.json', JSON.stringify({
-            port: 8081,
-            something_configurable: 'Configured in production',
-            dev: {
-                something_configurable: 'Configured in development'
-            }
-        }, null, 4));
-    }
-
-    log.info('Creating dc-api-core scripts...');
-    const pkg = JSON.parse(fs.readFileSync(ROOT + '/package.json').toString());
-
-    if (!pkg.scripts) pkg.scripts = {};
-    pkg.scripts.start = 'dc-api-core';
-    pkg.scripts.dev = 'dc-api-core --dev';
-
-    fs.writeFileSync(ROOT + '/package.json', JSON.stringify(pkg, null, 4));
-
-    log.text('\nNow you can run `npm run dev` or `yarn dev` to start development server');
-    log.text('and open http://localhost:8081/Info/status to see example controller output.');
-    process.exit();
-}
-
 const config = require('./config');
+
+
+const ROOT = process.cwd();
+
 if (config.isDev) {
+    /** @type {ChildProcessByStdio<null, Readable, null>} */
     let core;
+
+    /** @return {Promise<void> | void} */
+    function stopCore () {
+        if (!core || core.exitCode !== null) return;
+
+        return new Promise(resolve => {
+            core.kill();
+
+            let timeout;
+            core.once('exit', () => {
+                clearTimeout(timeout);
+                resolve();
+            });
+
+            timeout = setTimeout(() => core.kill(9), 500);
+        });
+    }
+
     let restarting = false;
     const { spawn } = require('child_process');
-    const start = () => {
+    const start = async reason => {
         if (restarting) return;
 
         restarting = true;
-        if (core) core.kill();
+        await stopCore();
+
         log.text('');
         log.info('Starting API...');
-        core = spawn('node', [__dirname + '/index.js', ...process.argv.slice(2)], { cwd: ROOT });
-        core.stderr.pipe(process.stderr);
+
+        core = spawn(
+            'node',
+            [__dirname + '/index.js', ...process.argv.slice(2), '--restart-reason', reason],
+            { cwd: ROOT, env: process.env, stdio: ['ignore', 'pipe', 'inherit'] }
+        );
+
         core.stdout.pipe(process.stdout);
         core.stdout.once('readable', () => restarting = false);
-        core.on('exit', (code) => {
-            if (code) log.error('API server process crushed with code ' + code);
-            else if (!restarting) log.info('API server process exited');
+
+        core.once('exit', code => {
+            if (code) {
+                // Converting i64 (JS Number) to i32 code
+                log.error('API server process crushed with code ' + (code | 0));
+            } else if (!restarting) {
+                log.info('API server process exited');
+            }
+
+            restarting = false;
         });
     };
 
     log.text('API will be restarted after saving any file');
     log.text('You can submit `rs` to restart server manually');
-    start();
+    start('@initial');
+
     process.stdin.on('data', line => {
-        if (line.toString().trim() == 'rs') start();
+        if (line.toString().trim() == 'rs') start('@manual');
     });
 
     const watch = require('watch');
     watch.watchTree(ROOT, {
         ignoreDotFiles: true,
-        filter: file => {
-            file = file.slice(file.lastIndexOf('/') + 1);
-            if (~config.ignore.indexOf(file)) return false;
-            return true;
+        filter (file) {
+            file = file.replace(/\\/g, '/').slice(file.lastIndexOf('/') + 1);
+
+            if (config.ignore.indexOf(file) != -1) {
+                return false;
+            } else if (file.includes('/node_modules/')) {
+                return false;
+            } else {
+                return true;
+            }
         },
         interval: 0.075
     }, (path, curr, prev) => {
         if (typeof path == 'object' && !prev && !curr) return;
-        start();
+        start(path);
     });
 
-    process.on('SIGINT', () => {
+    process.on('SIGINT', async () => {
         restarting = true;
-        if (core) core.kill();
+        stopCore();
         process.exit();
     });
 } else {

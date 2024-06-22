@@ -7,7 +7,7 @@ class ControllerBase {}
 function isIpProxied (value, isV4) {
     if (isV4) {
         // Loopback, local subnets
-        if (value.startsWith('127.') || value.startsWith('192.168.') || value.startsWith('10.')) {
+        if (value.startsWith('127.') || value.startsWith('192.168.') || value.startsWith('10.') || value.startsWith('100.64.')) {
             return true;
         }
 
