@@ -6,6 +6,7 @@
 		"skipLibCheck": true,
 		"checkJs": false,
 		"allowJs": true,
+		"noImplicitAny": false,
 		"lib": [
 			"esnext",
 			"dom"

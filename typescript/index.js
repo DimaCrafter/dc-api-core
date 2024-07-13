@@ -9,7 +9,7 @@ Preprocessor.attachHooks();
 
 tn.register({
 	compilerOptions: tsconfig.compilerOptions,
-	ignore: ["(?:^|/)node_modules/", "\\.js(on)?$"],
+	ignore: ["\\.js(on)?$"],
 	skipProject: true,
 	// Skip type checking in production
 	transpileOnly: !config.isDev,
