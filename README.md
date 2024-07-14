@@ -7,7 +7,8 @@
 ![Documentation image](https://user-images.githubusercontent.com/10772852/116776513-d4a0ba00-aa79-11eb-99c5-a42592b0bd2d.png)
 
 * [Documentation](http://dimacrafter.github.io/dc-api-core)
-* [dc-api-cli](https://github.com/DimaCrafter/dc-api-cli) - CLI toolkit
+* [deema](https://github.com/mayerdev/deema) - CLI toolkit **new**
+* [dc-api-cli](https://github.com/DimaCrafter/dc-api-cli) - CLI toolkit (legacy)
 * [dc-api-client](https://github.com/DimaCrafter/dc-api-client) - API client
 * [dc-api-mongo](https://github.com/DimaCrafter/dc-api-mongo) - Mongoose based MongoDB driver
 * [Examples](https://github.com/mayerdev/dc-api-examples)
@@ -49,7 +50,15 @@
 
 **5)** Done!
 
-## CLI
+## [Deema CLI](https://github.com/mayerdev/deema)
+
+You can use `deema gen project <ProjectName>` to create project.
+
+You can also optionally use arguments:
+- `--ts` or `--typescript` to create typescript project;
+- you can use `--install` to install packages immediately after creating a project.
+
+## CLI (Legacy)
 
 You can use `dc-api-core` command locally in `package.json` scripts.
 
@@ -92,6 +101,7 @@ Options:
 | `isDev`               | Read-only           | `true` if using `--dev` argument                           |
 | `dev`                 | `{}`                | Config to merge if `isDev` is `true`                       |
 | `ttl`                 | `0`                 | WebSocket TTL in seconds, `0` - disabled                   |
+| `typescript`          | `false`             | TypeScript-support                                         |
 
 [vercel/ms]: https://github.com/vercel/ms
 
