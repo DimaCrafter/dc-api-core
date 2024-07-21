@@ -7,8 +7,7 @@
 ![Documentation image](https://user-images.githubusercontent.com/10772852/116776513-d4a0ba00-aa79-11eb-99c5-a42592b0bd2d.png)
 
 * [Documentation](http://dimacrafter.github.io/dc-api-core)
-* [deema](https://github.com/mayerdev/deema) - CLI toolkit **new**
-* [dc-api-cli](https://github.com/DimaCrafter/dc-api-cli) - CLI toolkit (legacy)
+* [deema](https://github.com/mayerdev/deema) - CLI toolkit
 * [dc-api-client](https://github.com/DimaCrafter/dc-api-client) - API client
 * [dc-api-mongo](https://github.com/DimaCrafter/dc-api-mongo) - Mongoose based MongoDB driver
 * [Examples](https://github.com/mayerdev/dc-api-examples)
@@ -19,6 +18,8 @@
 * [vercel/ms](https://github.com/vercel/ms)
 * [μWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
 * [watch](https://github.com/mikeal/watch)
+* [ts-node](https://github.com/TypeStrong/ts-node) (optional)
+* [typescript](https://github.com/Microsoft/TypeScript) (optional)
 
 ---
 
@@ -36,7 +37,21 @@
 
 ---
 
-## Installation
+## Installation with [Deema CLI](https://github.com/mayerdev/deema) (recommended)
+
+**1)** You can use `deema gen project <ProjectName>` to create project.
+
+You can also optionally use arguments:
+- `--ts` or `--typescript` to create typescript project;
+- you can use `--install` to install packages immediately after creating a project.
+
+**2)** Run `npm install` or `yarn` (skip if you created project with `--install`)
+
+**3)** Run `deema serve`
+
+**4)** Done!
+
+## Installation (manually)
 
 **0)** Run `npm init` or `yarn init`
 
@@ -49,25 +64,6 @@
 **4)** Run `npm start` or `yarn start`
 
 **5)** Done!
-
-## [Deema CLI](https://github.com/mayerdev/deema)
-
-You can use `deema gen project <ProjectName>` to create project.
-
-You can also optionally use arguments:
-- `--ts` or `--typescript` to create typescript project;
-- you can use `--install` to install packages immediately after creating a project.
-
-## CLI (Legacy)
-
-You can use `dc-api-core` command locally in `package.json` scripts.
-
-Options:
-
-* No options - Just running your project.
-* `init` - Create example files and start scripts.
-* `--dev` - Running project in development mode.
-* `--cfg <path>` - Overrides `config.json` location. You can use both relative and absolute paths.
 
 ---
 
@@ -136,33 +132,43 @@ Example:
 
 ---
 
-## DB module
-
-```ts
-require('dc-api-core/DB'): {
-    [string: code]: (config?: string, template?: Object) => DBDriver
-}
-```
-
-* `code` - Registered code of database driver. For example `dc-api-mongo` registers `mongo`.
-* `config` - Configuration name after dot in `config.json`. Ex. `mongo('dev')` points to `db['mongo.dev']`.
-* `template` - Object that overrides selected configuration.
-* `DBDriver` - Mongoose-like object (not always, defined by plugin)
+## MongoDB (recommended)
 
 Example:
 
 ```js
-const db = require('dc-api-core/DB').mongo();
+// JS
+const db = require('dc-api-mongo').connect();
+
+// TS
+import db from 'dc-api-mongo/mongo';
+
+async function main() {
+ const result = await db.Model.findOne();
+ console.log(result);
+}
+
+main();
 ```
 
-Where `mongo` - your database driver name.
+Where `Model` is your model name.
 
-Example:
+## MySQL
+
 If you're using MySQL, use `mysql` as database driver (don't forget to apply plugin first).
 
 ```js
-const db = require('dc-api-core/DB').mysql();
+const db = require('dc-api-mysql').connect();
+
+async function main() {
+ const result = await db.Model.findOne();
+ console.log(result);
+}
+
+main();
 ```
+
+Where `Model` is your model name.
 
 ## Plugins
 
@@ -230,7 +236,11 @@ module.exports = class Test {
 Require config module:
 
 ```js
+// JS
 const config = require('dc-api-core/config');
+
+// TS
+import config from 'dc-api-core/config';
 ```
 
 Get data:
@@ -285,4 +295,3 @@ module.exports = Test;
 * [ ] More functionality tests
 * [ ] Clusterization/multi-threading support
 * [ ] Edit pages "API" > "Database driver" and "Plugins" > "Basics" of docs
-* [ ] Repair CLI
