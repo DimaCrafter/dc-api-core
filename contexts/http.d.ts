@@ -2,6 +2,7 @@ import { HttpRequest, HttpResponse } from 'uWebSockets.js'
 
 import { ControllerBase, ControllerBaseContext } from './base'
 import { Validated, ValidatedCtor } from '../typescript/validator'
+import { Validator } from '../utils/validator'
 
 
 export class HttpController extends ControllerBase {
@@ -35,6 +36,8 @@ type Request = HttpRequest & {
 export class HttpControllerContext extends ControllerBaseContext<Request, HttpResponse> {
 	constructor (req: Request, res: HttpResponse);
     init (): Promise<void>;
+
+	validator: Validator;
 
     send (data: any, code?: number, isPure?: boolean): void;
     drop (): void;

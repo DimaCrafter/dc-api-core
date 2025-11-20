@@ -37,20 +37,6 @@
 
 ---
 
-## Installation with [Deema CLI](https://github.com/mayerdev/deema) (recommended)
-
-**1)** You can use `deema gen project <ProjectName>` to create project.
-
-You can also optionally use arguments:
-- `--ts` or `--typescript` to create typescript project;
-- you can use `--install` to install packages immediately after creating a project.
-
-**2)** Run `npm install` or `yarn` (skip if you created project with `--install`)
-
-**3)** Run `deema serve`
-
-**4)** Done!
-
 ## Installation (manually)
 
 **0)** Run `npm init` or `yarn init`
@@ -225,6 +211,227 @@ If the `onLoad` function returns false, the request will be rejected.
 module.exports = class Test {
     onLoad () {
         if (!this.session.user) return false;
+    }
+}
+```
+
+## Data Validation
+
+Validator is available via `this.validator` in HTTP controller context.
+
+### Main `check` function
+
+Validates data against field schema and returns validation result.
+
+```js
+module.exports = class Test {
+    async createUser () {
+        const result = this.validator.check(this.data, [
+            {
+                name: 'email',
+                type: 'string',
+                use: this.validator.email
+            },
+            {
+                name: 'password',
+                type: 'string',
+                use: this.validator.password
+            },
+            {
+                name: 'age',
+                type: 'number',
+                min: 18,
+                max: 100
+            }
+        ]);
+
+        if (!result.success) {
+            this.send({ errors: result.errors }, 400);
+            return;
+        }
+
+        const validatedData = result.filtered;
+        
+        this.send(validatedData);
+    }
+}
+```
+
+### Field Schema
+
+| Parameter      | Type            | Description                                                                   |
+|----------------|-----------------|-------------------------------------------------------------------------------|
+| `name`         | `string`        | Field name (required)                                                         |
+| `type`         | `string`        | Data type: `'string'`, `'number'`, `'boolean'`, `'object'`, `'array'`         |
+| `enum`         | `any[]`         | Array of allowed values                                                       |
+| `fields`       | `FieldSchema[]` | Nested fields for `'object'` type                                             |
+| `of`           | `FieldSchema`   | Element schema for `'array'` type                                             |
+| `min`          | `number`        | Minimum length for string/array                                               |
+| `max`          | `number`        | Maximum length for string/array                                               |
+| `use`          | `function`      | Validation function: `(value) => { success: boolean, error: string \| null }` |
+| `uses`         | `function[]`    | Array of validation functions (executed sequentially)                         |
+
+### Built-in Validators
+
+#### `validator.email(email)`
+
+Validates email address format.
+
+```js
+{
+    name: 'email',
+    type: 'string',
+    use: this.validator.email
+}
+```
+
+#### `validator.phone(phone)`
+
+Validates phone number format.
+
+```js
+{
+    name: 'phone',
+    type: 'string',
+    use: this.validator.phone
+}
+```
+
+#### `validator.password(password)`
+
+Validates password length (5 to 255 characters).
+
+```js
+{
+    name: 'password',
+    type: 'string',
+    use: this.validator.password
+}
+```
+
+#### `validator.ObjectId(value)`
+
+Validates MongoDB ObjectId format.
+
+```js
+{
+    name: 'userId',
+    type: 'string',
+    use: this.validator.ObjectId
+}
+```
+
+#### `validator.hostname(hostname)`
+
+Validates domain name format.
+
+```js
+{
+    name: 'domain',
+    type: 'string',
+    use: this.validator.hostname
+}
+```
+
+#### `validator.url(url)`
+
+Validates URL format (http/https only).
+
+```js
+{
+    name: 'website',
+    type: 'string',
+    use: this.validator.url
+}
+```
+
+#### `validator.inArray(array)`
+
+Creates validator to check if value is in array.
+
+```js
+{
+    name: 'status',
+    type: 'string',
+    use: this.validator.inArray(['active', 'inactive', 'pending'])
+}
+```
+
+### Usage Examples
+
+#### Object Validation
+
+```js
+module.exports = class Test {
+    async createProfile () {
+        const result = this.validator.check(this.data, [
+            {
+                name: 'user',
+                type: 'object',
+                fields: [
+                    { name: 'name', type: 'string', min: 2, max: 50 },
+                    { name: 'email', type: 'string', use: this.validator.email }
+                ]
+            }
+        ]);
+
+        if (!result.success) {
+            this.send({ errors: result.errors }, 400);
+            return;
+        }
+
+        this.send(result.filtered);
+    }
+}
+```
+
+#### Array Validation
+
+```js
+module.exports = class Test {
+    async createItems () {
+        const result = this.validator.check(this.data, [
+            {
+                name: 'items',
+                type: 'array',
+                min: 1,
+                max: 10,
+                of: {
+                    type: 'string',
+                    min: 3
+                }
+            }
+        ]);
+
+        if (!result.success) {
+            this.send({ errors: result.errors }, 400);
+            return;
+        }
+
+        this.send(result.filtered);
+    }
+}
+```
+
+#### Enum Validation
+
+```js
+module.exports = class Test {
+    async updateStatus () {
+        const result = this.validator.check(this.data, [
+            {
+                name: 'status',
+                type: 'string',
+                enum: ['pending', 'approved', 'rejected']
+            }
+        ]);
+
+        if (!result.success) {
+            this.send({ errors: result.errors }, 400);
+            return;
+        }
+
+        this.send(result.filtered);
     }
 }
 ```

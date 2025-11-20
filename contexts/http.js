@@ -8,6 +8,7 @@ const ValidationError = require('../typescript/ValidationError');
 const { camelToKebab } = require('../utils');
 const { getActionCaller } = require('../utils/loader');
 const app = require('../app');
+const jsValidator = require('../utils/validator');
 
 class HttpController extends ControllerBase {}
 
@@ -39,6 +40,13 @@ class HttpControllerContext extends ControllerBaseContext {
                 throw error;
             }
         }
+    }
+
+    /**
+     * @returns {Validator}
+     */
+    get validator() {
+        return jsValidator;
     }
 
     /**
