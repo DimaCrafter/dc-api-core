@@ -17,9 +17,11 @@ if (config.ssl) {
 
 // CORS preflight request
 app.options('/*', (res, req) => {
-	cors.preflight(req, res);
-	res.writeStatus('200 OK');
-	res.end();
+	res.cork(() => {
+		cors.preflight(req, res);
+		res.writeStatus('200 OK');
+		res.end();
+	});
 });
 
 module.exports = app;

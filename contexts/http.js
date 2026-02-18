@@ -54,19 +54,24 @@ class HttpControllerContext extends ControllerBaseContext {
      * @param {number} code
      * @param {boolean} isPure
      */
-    send (data, code = 200, isPure = false) {
+    async send (data, code = 200, isPure = false) {
         if (this._res.aborted) return;
         this._res.aborted = true;
 
-        this._res.cork(async () => {
+        let sessionHeader = null;
+        if (this._session?._init) {
+            sessionHeader = JSON.stringify(await this._session._init);
+        }
+
+        this._res.cork(() => {
             this._res.writeStatus(getResponseStatus(code));
             CORS.normal(this._req, this._res);
             for (const header in this._res.headers) {
                 this._res.writeHeader(header, this._res.headers[header]);
             }
 
-            if (this._session?._init) {
-                this._res.writeHeader('session', JSON.stringify(await this._session._init));
+            if (sessionHeader) {
+                this._res.writeHeader('session', sessionHeader);
             }
 
             if (isPure) {
@@ -98,7 +103,7 @@ class HttpControllerContext extends ControllerBaseContext {
         if (this._res.aborted) return;
         this._res.aborted = true;
 
-        this._res.cork(async () => {
+        this._res.cork(() => {
             this._res.writeStatus(getResponseStatus(code));
             CORS.normal(this._req, this._res);
             this._res.writeHeader('Location', url);
@@ -156,17 +161,17 @@ async function dispatch (req, res, handler) {
         // Throws session parsing errors
         await ctx.init();
     } catch (error) {
-        return ctx.send(error.toString(), 500);
+        return await ctx.send(error.toString(), 500);
     }
 
     try {
         const result = await handler(ctx);
         if (!res.aborted && result !== undefined) {
-            ctx.send(result);
+            await ctx.send(result);
         }
     } catch (error) {
         if (error instanceof HttpError) {
-            ctx.send(error.message, error.code);
+            await ctx.send(error.message, error.code);
             emitError({
                 isSystem: true,
                 type: 'DispatchError',
@@ -176,9 +181,9 @@ async function dispatch (req, res, handler) {
             });
         } else {
             if (config.isDev) {
-                ctx.send(error.toString(), 500);
+                await ctx.send(error.toString(), 500);
             } else {
-                ctx.send('InternalError', 500);
+                await ctx.send('InternalError', 500);
             }
 
             emitError({
