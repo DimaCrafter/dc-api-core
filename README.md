@@ -1,7 +1,5 @@
 # Simple API core for your projects
 
-[![NPM](https://nodei.co/npm/dc-api-core.png)](https://npmjs.com/package/dc-api-core)
-
 ## Useful links
 
 * [Documentation](http://dimacrafter.github.io/dc-api-core) (needs to be updated)
