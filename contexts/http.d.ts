@@ -6,6 +6,7 @@ import { Validator } from '../utils/validator'
 
 
 export class HttpController extends ControllerBase {
+	[action: string]: any;
 	/** Parsed request payload */
 	data?: any;
 	/** Parameters parsed from route path */

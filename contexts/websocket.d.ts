@@ -6,6 +6,7 @@ import { ControllerBase, ControllerBaseContext } from './base'
  * It also helps IDE to show code suggestions.
  */
 export class SocketController extends ControllerBase {
+	[action: string]: any;
 	/** Connection open hook, overridable */
 	open (): void;
 	/** Connection close hook, overridable */

@@ -149,7 +149,9 @@ class SocketControllerContext extends ControllerBaseContext {
  * @param {import('./websocket').SocketController} controller
  */
 function registerSocketController (path, controller) {
-	app.ws(path, {
+	if (config.isDev) log.info(`WS    ${''.padEnd(9)} ${path}`);
+
+    app.ws(path, {
 		maxPayloadLength: 16 * 1024 * 1024, // 16 Mb
 		idleTimeout: config.ttl || 0,
 		upgrade (res, req, context) {

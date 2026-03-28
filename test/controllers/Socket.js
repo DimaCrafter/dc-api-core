@@ -1,4 +1,6 @@
-module.exports = class Socket {
+const { SocketController } = require('../../');
+
+module.exports = class Socket extends SocketController {
 	open () {
 		this.emit('open-reply');
 	}

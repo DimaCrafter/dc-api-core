@@ -1,5 +1,3 @@
-const { ObjectId } = require('mongodb');
-
 const validateValue = (value, schema, fieldName, index = null) => {
     const errors = [];
     const indexSuffix = index !== null ? `[${index}]` : '';
@@ -303,6 +301,8 @@ module.exports.password = (password) => {
 }
 
 module.exports.ObjectId = (value) => {
+    const { ObjectId } = require('mongodb');
+
     if (!ObjectId.isValid(value)) {
         return { error: 'Invalid ObjectId', success: false };
     }

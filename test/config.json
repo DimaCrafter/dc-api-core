@@ -1,3 +1,6 @@
 {
-	"port": 6080
+	"port": false,
+	"nats": {
+		"url": "nats://localhost:4222"
+	}
 }

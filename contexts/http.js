@@ -9,6 +9,7 @@ const { camelToKebab } = require('../utils');
 const { getActionCaller } = require('../utils/loader');
 const app = require('../app');
 const jsValidator = require('../utils/validator');
+const log = require('../log');
 
 class HttpController extends ControllerBase {}
 
@@ -152,6 +153,8 @@ function registerHttpController (path, controller) {
 		// TODO: get request method through vanilla decorators
 		app.get(routePath, requestHandler);
 		app.post(routePath, requestHandler);
+
+		if (config.isDev) log.info(`HTTP  ${'GET|POST'.padEnd(9)} ${routePath}`);
 	}
 }
 

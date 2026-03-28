@@ -30,10 +30,9 @@ if (configPath) {
     config = existsSync(configPath) ? load(configPath) : {};
 }
 
-if (config.port) {
-    if (config.port == '$env') config.port = process.env.PORT;
-} else {
-    config.port = 8081;
+if (config.port === false) {
+} else if (!config.port || config.port === '$env') {
+    config.port = config.port === '$env' ? process.env.PORT : 8081;
 }
 
 config.db = config.db || {};
