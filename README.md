@@ -3,7 +3,6 @@
 ## Useful links
 
 * [Documentation](http://dimacrafter.github.io/dc-api-core) (needs to be updated)
-* [deema](https://github.com/mayerdev/deema) - CLI toolkit
 * [dc-api-client](https://github.com/DimaCrafter/dc-api-client) - API client
 * [dc-api-mongo](https://github.com/DimaCrafter/dc-api-mongo) - Mongoose based MongoDB driver
 * [Examples](https://github.com/mayerdev/dc-api-examples)
